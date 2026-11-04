@@ -78,11 +78,14 @@ async function main() {
   const list = [...urls.entries()].slice(0, MAX_LINKS);
   const results = [];
   let i = 0;
+  const POOL_CHART = /^https:\/\/yields\.llama\.fi\/chart\//;
+  const POOL_CHART_SAMPLE = 6;
+  let poolChartChecks = 0;
   // be gentle with each host
   for (const h of ['defillama.com', 'www.coingecko.com', 'www.geckoterminal.com', 'dexscreener.com', 'snapshot.org']) http.configureHost(h, { minIntervalMs: 800, concurrency: 2 });
   http.configureHost('api.coingecko.com', { minIntervalMs: 7000, concurrency: 1 });
   http.configureHost('api.geckoterminal.com', { minIntervalMs: 2500, concurrency: 1 });
-  http.configureHost('yields.llama.fi', { minIntervalMs: 1500, concurrency: 1 });
+  http.configureHost('yields.llama.fi', { minIntervalMs: 5000, concurrency: 1 });
   const workers = Array.from({ length: 8 }, async () => {
     while (i < list.length) {
       const [url, where] = list[i++];
@@ -94,15 +97,28 @@ async function main() {
       if (fetched.has(url)) {
         const f = fetched.get(url);
         // A request that failed during the fetch is the reason the site shows "unavailable"
-        // there (e.g. a paid-only endpoint). The link is right; it shows the failure.
+        // there (e.g. a paid-only endpoint): the link is right, it shows the failure.
+        // Rate limits, busy servers and network errors mean "try it by hand", not "broken".
         const expected = !f.ok && f.status >= 400 && f.status < 500 && f.status !== 429;
         results.push({
-          url, where: [...where].slice(0, 5), ok: f.ok ? true : expected ? null : false, status: f.status, kind: 'api',
+          url, where: [...where].slice(0, 5), ok: f.ok ? true : null, status: f.status, kind: 'api',
           error: f.ok ? undefined : f.error, checkedAt: f.fetchedAt,
-          note: f.ok ? 'Checked during the data fetch' : expected ? `Failed during the data fetch (${f.status}), which is why the site shows "unavailable" here` : 'Checked during the data fetch',
+          note: f.ok ? 'Checked during the data fetch'
+            : expected ? `Failed during the data fetch (${f.status}), which is why the site shows "unavailable" here`
+              : f.status === 429 ? 'Rate-limited during the data fetch — open by hand'
+                : `Couldn't be fetched during the data fetch (${String(f.error || f.status).slice(0, 80)}) — open by hand`,
           ...(expected ? { expected: true } : {}),
         });
         continue;
+      }
+      // DefiLlama's per-pool history endpoint rate-limits after a handful of calls, and every
+      // pool's URL follows the same documented pattern, so only a sample is opened.
+      if (POOL_CHART.test(url)) {
+        if (poolChartChecks >= POOL_CHART_SAMPLE) {
+          results.push({ url, where: [...where].slice(0, 5), ok: null, status: null, note: `Not checked one by one: DefiLlama rate-limits this endpoint, so only ${POOL_CHART_SAMPLE} pool histories were opened (listed in this table) — open by hand` });
+          continue;
+        }
+        poolChartChecks += 1;
       }
       if (url.includes('hub.snapshot.org/graphql')) {
         results.push({ url, where: [...where], ok: null, status: null, note: 'GraphQL endpoint (POST only); see Snapshot proposal links instead' });
