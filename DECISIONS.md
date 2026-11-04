@@ -75,3 +75,12 @@ Choices made while building this unattended, with the reason for each. Newest at
 - **No dual-axis charts.** Price and volume, or TVL and price, are separate charts. Compare uses one axis, either in dollars or with every series rebased to 100 at the start.
 - **"Today in one glance"** at the top of the Overview repeats every chart's generated headline in one numbered list, each jumping to its chart.
 - **Dark mode** follows the operating system by default; the toggle remembers your choice in the browser.
+
+## Later additions
+
+- **Catalysts include peers** (tagged "peer"), because the watchlist protocols mostly vote on-chain and Snapshot only has active spaces for Compound and Morpho. Snapshot's "latest proposals" are fetched per space, so one busy space can't crowd out the others.
+- **Only http(s) links are ever shown or opened.** Feed links come from third-party RSS, so a `javascript:` URL could otherwise become a clickable link. The pipeline drops such items and the site refuses to render them.
+- **A second, sourced description** from CoinGecko appears under DefiLlama's on protocol pages when the two differ (some DefiLlama parent descriptions describe a sub-product).
+- **Site check workflow:** every push that changes the site or tests opens all pages in headless Chromium (desktop and phone sizes) and fails on JavaScript errors, empty pages, undrawn charts or sideways scrolling. It pins Playwright 1.49.1 so the browser download is reproducible.
+- **The 6-hour schedule only runs on the default branch** (GitHub's rule for scheduled workflows). Until this branch is merged into `main`, data updates happen on pushes and manual runs only.
+- **Repository growth:** each data update rewrites about 3 MB of JSON, and git stores only the differences. If the repository ever gets too big, keep only the latest data on a separate branch, or publish data as a Pages artifact without committing it.
