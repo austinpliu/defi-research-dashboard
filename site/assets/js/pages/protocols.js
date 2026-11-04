@@ -55,6 +55,7 @@ export async function render(root) {
   if (byFees.length) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Fees',
+      termKey: 'fees',
       take: leaderTakeaway(byFees.map((r) => ({ name: r.name, total30d: r.fees30d })), { metric: 'fees', scope: 'tracked protocol' }),
       title: 'Fees over the last 30 days, tracked protocols',
       build: hbarChart({ items: byFees.map((r) => ({ name: r.name, value: r.fees30d })), name: 'Fees 30d' }),
@@ -67,6 +68,7 @@ export async function render(root) {
   if (byTvl.length) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'TVL',
+      termKey: 'tvl',
       take: byTvl.length > 1 ? { pre: `${byTvl[0].name} holds `, hl: `${(byTvl[0].tvl / byTvl[1].tvl).toFixed(1)}x the TVL`, post: ` of ${byTvl[1].name}, the next largest tracked protocol` } : null,
       fallback: 'TVL, tracked protocols',
       title: 'TVL today, tracked protocols',

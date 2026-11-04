@@ -55,6 +55,7 @@ export async function render(root, { params }) {
     const build = () => lineChart({ series: [{ name: `${sym} price`, data: trimDays(se.price, range) }], area: true });
     const card = chartCard({
       kicker: 'Price',
+      termKey: 'price',
       take: priceTakeaway(sym, mk, se.price),
       title: `${sym} price in USD, ${rangeLabel(range)}`,
       big: true,
@@ -79,6 +80,7 @@ export async function render(root, { params }) {
   if (se.marketCap?.length) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Market cap',
+      termKey: 'marketCap',
       take: trendTakeaway(`${sym} market cap`, se.marketCap),
       title: `${sym} market cap, past year`,
       build: lineChart({ series: [{ name: 'Market cap', data: se.marketCap }], area: true }),
@@ -91,6 +93,7 @@ export async function render(root, { params }) {
     const avg = last90.reduce((s, p) => s + p[1], 0) / (last90.length || 1);
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Trading volume',
+      termKey: 'volume24h',
       take: avg ? { pre: `${sym} trades about `, hl: `${usd(avg)} a day`, post: ' on average over the last 90 days' } : null,
       title: `${sym} daily trading volume (all exchanges), last 90 days`,
       build: columnChart({ data: last90, name: 'Volume' }),
@@ -148,6 +151,7 @@ export async function render(root, { params }) {
     const top = dx.pools.slice(0, 10);
     grid.append(h('div', { class: 'span-12' }, chartCard({
       kicker: 'DEX liquidity',
+      termKey: 'liquidity',
       take: liquidityTakeaway(sym, dx),
       title: `Largest ${sym} pools by liquidity`,
       note: dx.stale ? `Stale: from ${dateTime(dx.stale.lastGoodAt)} (latest attempt: ${dx.stale.reason})` : `Searched: ${(dx.attempted || []).map((a) => `${a.platform}${a.fallback ? ' (DexScreener)' : ''}${a.ok ? '' : ' ✗'}`).join(', ')}`,

@@ -111,7 +111,7 @@ export async function render(root, { query }) {
       chartHolder.replaceChildren(chartCard({ kicker: 'Overlay', fallback: title, unavailableReason: `None of the selected protocols has ${M.short} data.` }));
       card = null;
     } else if (!card || !card.isConnected) {
-      card = chartCard({ kicker: 'Overlay', take, title, size: 'tall', build, legend: [], src: srcs, csvName: `compare-${metric}`, table });
+      card = chartCard({ kicker: 'Overlay', termKey: mode === 'index' ? 'indexed' : metric === 'tvl' ? 'tvl' : metric === 'fees' ? 'fees' : metric === 'revenue' ? 'revenue' : metric === 'price' ? 'price' : 'marketCap', take, title, size: 'tall', build, legend: [], src: srcs, csvName: `compare-${metric}`, table });
       chartHolder.replaceChildren(card);
       const { mountPending } = await import('../cards.js');
       mountPending();

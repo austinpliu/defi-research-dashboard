@@ -40,6 +40,7 @@ export async function render(root) {
     const worst = withChg[withChg.length - 1];
     root.append(h('div', { style: { marginTop: '18px' } }, chartCard({
       kicker: 'Weekly moves',
+      termKey: 'change7d',
       take: { pre: `${best.symbol} `, hl: `${best.priceChange7d >= 0 ? 'gained' : 'lost'} the most this week (${pct(best.priceChange7d, { digits: 0 })})`, post: worst.priceChange7d < 0 ? `; ${worst.symbol} fell ${pct(Math.abs(worst.priceChange7d), { signed: false, digits: 0 })}` : '' },
       title: '7-day price change, tracked tokens',
       build: divergingChart({ items: withChg.map((r) => ({ name: r.symbol, value: r.priceChange7d, sub: r.name })) }),

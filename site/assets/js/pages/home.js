@@ -63,6 +63,7 @@ export async function render(root) {
     ];
     const card = chartCard({
       kicker: 'Total value locked',
+      termKey: 'defiTvl',
       take: trendTakeaway('DeFi TVL', full),
       title: 'Total value locked in DeFi, all chains',
       big: true,
@@ -104,6 +105,7 @@ export async function render(root) {
     const top = ch.top.slice(0, 10);
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Chains',
+      termKey: 'chain',
       take: chainTakeaway(ch.top),
       title: `TVL by chain, top 10 of ${ch.count}`,
       build: hbarChart({ items: top.map((c) => ({ name: c.name, value: c.tvl, sub: `${pct(c.share, { signed: false })} of DeFi TVL · 30d ${pct(c.change30d)}` })), name: 'TVL' }),
@@ -129,6 +131,7 @@ export async function render(root) {
     const legend = () => { const t = themeOf(document.querySelector('main')); return names.map((n, i) => ({ name: n, color: t.s[i] })); };
     const card = chartCard({
       kicker: 'Chains',
+      termKey: 'indexed',
       take: compareTakeaway(rows, 'TVL', 'the past year'),
       title: 'TVL growth of the five largest chains, indexed to 100 one year ago',
       controls: segmented([{ value: 'index', label: 'Growth (=100)' }, { value: 'usd', label: 'Dollars' }], mode, (v) => { mode = v; card.update({ build: resolved, title: v === 'index' ? 'TVL growth of the five largest chains, indexed to 100 one year ago' : 'TVL of the five largest chains, past year' }); }, 'Units'),
@@ -150,6 +153,7 @@ export async function render(root) {
     const items = (w) => listFor(w).list.slice(0, 12).map((p) => ({ name: p.name, value: p.total30d, sub: `${p.category || ''} · 7d ${usd(p.total7d)} · 30d vs prior ${pct(p.change30dOver30d)}` }));
     const card = chartCard({
       kicker: 'Protocols',
+      termKey: 'fees',
       take: leaderTakeaway(listFor(which).list, { metric: which }),
       title: `Top protocols by ${which}, last 30 days`,
       note: 'Child protocols are combined under their parent (e.g. Aave V2 + V3 → Aave). Chains and exchanges are excluded.',
@@ -189,6 +193,7 @@ export async function render(root) {
       const legend = () => { const t = themeOf(document.querySelector('main')); return [...coins.map((c, i) => ({ name: `${c.symbol} (${c.name})`, color: t.s[i], box: true })), { name: 'Other', color: t.other, box: true }]; };
       card = chartCard({
         kicker: 'Stablecoins',
+        termKey: 'stablecoinIssuer',
         take: stablecoinTakeaway(total, st),
         title: 'Stablecoin supply by issuer, month-end, last 4 years',
         build,
@@ -222,6 +227,7 @@ export async function render(root) {
     const items = [...g, ...l.filter((x) => !g.includes(x))].map((x) => ({ name: x.name, value: x.change7d, sub: `TVL ${usd(x.tvl)} · ${x.category}` }));
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Movers',
+      termKey: 'movers',
       take: moversTakeaway(mv),
       title: `Biggest 7-day TVL moves, protocols over ${usd(mv.minTvl, { digits: 0 })}`,
       note: `${mv.eligibleCount} protocols qualify. Click a bar to open it on DefiLlama.`,
@@ -243,6 +249,7 @@ export async function render(root) {
     const data = () => (range === 90 ? trimDays(x.series, 90) : weeklySum(trimDays(x.series, range || 3650)));
     const card = chartCard({
       kicker: kick,
+      termKey: key === 'dexVolume' ? 'dexVolume' : 'fees',
       take: key === 'dexVolume' ? flowTakeaway('DEX volume', x, 'swapped') : (x.total30d ? { pre: 'DeFi users paid ', hl: `${usd(x.total30d)} in fees`, post: ' over the last 30 days' } : null),
       title: `${label}, ${range === 90 ? 'daily, last 90 days' : 'weekly'}`,
       controls: segmented([{ value: 90, label: '90D daily' }, { value: 365, label: '1Y weekly' }, { value: 730, label: '2Y weekly' }], range, (v) => { range = v; card.update({ build: columnChart({ data: data(), name: label, period: v === 90 ? 'day' : 'week' }), title: `${label}, ${v === 90 ? 'daily, last 90 days' : `weekly, last ${v === 365 ? 'year' : '2 years'}`}` }); }, 'Range'),
@@ -259,6 +266,7 @@ export async function render(root) {
   if (m.categories?.list?.length) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Categories',
+      termKey: 'category',
       take: categoryTakeaway(m.categories.list),
       title: 'Protocol TVL by category',
       note: 'Sum of each protocol’s TVL in the category; some assets are counted by more than one protocol.',

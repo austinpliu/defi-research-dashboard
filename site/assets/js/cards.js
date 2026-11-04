@@ -1,6 +1,6 @@
 // Chart card: takeaway headline → chart → legend → source line, with
 // PNG / Table / CSV buttons. Every chart has a table-view twin.
-import { h, append, takeaway as takeawayEl, sourceLine, svgIcon, unavailable } from './ui.js';
+import { h, append, takeaway as takeawayEl, sourceLine, svgIcon, unavailable, term } from './ui.js';
 import { mountChart, updateChart } from './charts.js';
 import { exportCardPNG, downloadCSV } from './export.js';
 import { dataTable } from './table.js';
@@ -55,7 +55,9 @@ export function chartCard(opts) {
     return card;
   }
 
-  const titleP = opts.title ? h('p', { class: 'chart-title' }, opts.title) : null;
+  // chart title, with a (?) glossary tooltip for the metric when termKey is given
+  const titleText = h('span', {}, opts.title || '');
+  const titleP = opts.title ? h('p', { class: 'chart-title' }, titleText, opts.termKey ? [' ', term('', opts.termKey).lastChild] : null) : null;
   if (titleP) card.append(titleP);
   if (opts.note) card.append(h('p', { class: 'chart-note' }, opts.note));
   if (opts.controls) card.append(h('div', { class: 'chart-controls' }, opts.controls));
@@ -125,7 +127,7 @@ export function chartCard(opts) {
       titleEl = nt;
       chartEl.setAttribute('aria-label', state.title || nt.dataset.plain);
     }
-    if (next.title !== undefined && titleP) { state.title = next.title; titleP.textContent = next.title; }
+    if (next.title !== undefined && titleP) { state.title = next.title; titleText.textContent = next.title; }
     if (next.legend) { state.legend = next.legend; renderLegend(); }
     if (next.src) { state.src = next.src; srcEl.replaceChildren(sourceLine(state.src, { sources: opts.sources })); }
     if (next.table) state.table = next.table;

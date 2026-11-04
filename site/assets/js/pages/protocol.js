@@ -87,6 +87,7 @@ export async function render(root, { params }) {
     const athDraw = T.ath ? ((T.value - T.ath.value) / T.ath.value) * 100 : null;
     const card = chartCard({
       kicker: 'Total value locked',
+      termKey: 'tvl',
       take: trendTakeaway(`${name} TVL`, T.series),
       title: `${name} TVL, ${rangeLabel(range)}`,
       note: T.note || null,
@@ -112,6 +113,7 @@ export async function render(root, { params }) {
   if (C?.list?.length) {
     grid.append(h('div', { class: 'span-4' }, chartCard({
       kicker: 'Chains',
+      termKey: 'chain',
       take: protocolChainTakeaway(name, C),
       title: `Where ${name}’s TVL sits (${C.count} chain${C.count === 1 ? '' : 's'})`,
       size: 'tall',
@@ -136,6 +138,7 @@ export async function render(root, { params }) {
     const legend = () => { const t = themeOf(document.querySelector('main')); return mkSeries(t).map((s) => ({ name: s.name, color: s.color })); };
     const card = chartCard({
       kicker: 'Fees & revenue',
+      termKey: 'revenue',
       take: revenueTakeaway(name, F, R),
       title: `Rolling 30-day fees and revenue, ${rangeLabel(range)}`,
       note: 'Each point is the total of the 30 days before it, which smooths out daily noise.',
@@ -164,6 +167,7 @@ export async function render(root, { params }) {
     const build = () => lineChart({ series: [{ name: `${sym} price`, data: trimDays(ts.price, range) }], area: true });
     const card = chartCard({
       kicker: 'Token',
+      termKey: 'price',
       take: priceTakeaway(sym || name, mk, ts.price),
       title: `${sym || name} price in USD, ${rangeLabel(range)}`,
       controls: segmented([{ value: 30, label: '30D' }, { value: 90, label: '90D' }, { value: 365, label: '1Y' }], range, (v) => { range = v; card.update({ build: build(), title: `${sym || name} price in USD, ${rangeLabel(v)}` }); }, 'Time range'),
@@ -229,6 +233,7 @@ export async function render(root, { params }) {
   if (tb?.list?.length) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Composition',
+      termKey: 'tvl',
       take: tb.list[0] ? { pre: '', hl: `${tb.list[0].token} makes up ${pct(tb.list[0].share, { signed: false, digits: 0 })}`, post: ` of ${name}’s TVL` } : null,
       title: `Assets inside ${name}’s TVL (as of ${date(tb.asOf)})`,
       build: hbarChart({ items: tb.list.slice(0, 10).map((x) => ({ name: x.token, value: x.usd, sub: pct(x.share, { signed: false }) })), name: 'Value' }),
