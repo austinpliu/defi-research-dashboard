@@ -59,6 +59,10 @@ async function main() {
     if (name === 'screener.json') data.rows = (data.rows || []).slice(0, 25);
     collect(data, name, urls);
   }
+  // API documentation linked from the Sources page (written in the site code, not the data)
+  for (const u of ['https://api-docs.defillama.com/', 'https://docs.coingecko.com/docs/keyless-public-api', 'https://docs.dexscreener.com/api/reference', 'https://apiguide.geckoterminal.com/', 'https://docs.snapshot.box/']) {
+    if (!urls.has(u)) urls.set(u, new Set(['Sources page (API docs)']));
+  }
   // DefiLlama protocol pages for screener rows are built in the browser; check a sample of them too
   const screener = readJSON(join(OUT, 'screener.json'));
   for (const r of (screener?.rows || []).slice(0, 10)) {

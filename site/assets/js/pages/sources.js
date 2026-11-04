@@ -9,7 +9,7 @@ const API_DOCS = [
   ['CoinGecko', 'Token price, market cap, FDV, volume, supply (keyless public API)', 'https://docs.coingecko.com/docs/keyless-public-api'],
   ['DexScreener', 'DEX pairs and liquidity', 'https://docs.dexscreener.com/api/reference'],
   ['GeckoTerminal', 'DEX pools (fallback)', 'https://apiguide.geckoterminal.com/'],
-  ['Snapshot', 'Governance proposals (GraphQL hub)', 'https://docs.snapshot.box/tools/api'],
+  ['Snapshot', 'Governance proposals (GraphQL hub)', 'https://docs.snapshot.box/'],
   ['RSS feeds', 'News sites, protocol blogs (Medium) and governance forums (Discourse)', null],
 ];
 
@@ -45,10 +45,13 @@ export async function render(root) {
   // problems
   grid.append(h('section', { class: 'card span-12' },
     h('div', { class: 'kicker' }, 'Problems this run'),
-    h('h3', { class: 'takeaway' }, meta.problems?.length ? `${meta.problems.length} thing${meta.problems.length === 1 ? '' : 's'} to know about` : 'No problems recorded'),
+    h('h3', { class: 'takeaway' }, meta.problems?.length ? `${meta.problems.length} thing${meta.problems.length === 1 ? '' : 's'} to know about` : 'No configuration problems'),
     meta.problems?.length
       ? h('ul', { class: 'feed' }, meta.problems.map((p) => h('li', {}, h('div', { class: 'when' }, h('span', { class: `chip ${p.severity === 'error' ? 'ink' : ''}` }, p.severity)), h('div', { class: 'what' }, p.message, p.hint ? h('div', { class: 'meta' }, `How to fix: ${p.hint}`) : null))))
-      : h('p', { class: 'muted' }, 'Every source answered.')));
+      : null,
+    h('p', { class: 'muted' }, meta.counts.failed
+      ? `${meta.counts.failed} request${meta.counts.failed === 1 ? '' : 's'} failed this run. Some failures are expected every time (DefiLlama’s paid-only endpoints answer HTTP 402; busy free APIs sometimes answer 429 “rate limited”). Each one is in the table below, and the affected sections say “unavailable” or show the last good copy marked STALE.`
+      : 'Every request succeeded.')));
 
   // requests
   const reqRows = meta.requests.map((r) => ({ ...r, host: new URL(r.url).host, status: r.status || (r.skipped ? 'skipped' : 'network error') }));

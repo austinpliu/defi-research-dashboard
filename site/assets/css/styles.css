@@ -247,7 +247,9 @@ main { max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter) 64px; }
 }
 .band-title { font: 900 clamp(32px, 5.4vw, 72px)/0.92 var(--font-head); letter-spacing: -0.025em; text-transform: uppercase; margin: 34px 0 0; max-width: 16ch; }
 .band-sub { margin: 12px 0 0; font-size: 14px; opacity: 0.86; max-width: 70ch; }
-.band-num { position: relative; align-self: start; justify-self: end; width: clamp(150px, 22vw, 300px); height: clamp(110px, 15vw, 200px); }
+.band > div:not(.band-num):not(.band-tag) { position: relative; z-index: 1; }
+.band > .band-tag { z-index: 2; }
+.band-num { position: relative; z-index: 0; align-self: start; justify-self: end; width: clamp(150px, 22vw, 300px); height: clamp(110px, 15vw, 200px); }
 .band-num::before {
   content: ''; position: absolute; inset: 14% 0 0 6%; background: var(--marker);
   clip-path: polygon(0 12%, 18% 12%, 18% 0, 72% 0, 72% 8%, 100% 8%, 100% 78%, 88% 78%, 88% 100%, 34% 100%, 34% 86%, 0 86%);
