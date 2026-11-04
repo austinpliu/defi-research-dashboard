@@ -555,3 +555,6 @@ footer.site a { color: var(--ink-2); }
 .summary-item .chip { justify-self: start; }
 .summary-take { font: 700 16px/1.35 var(--font-head); margin: 0; letter-spacing: -0.005em; }
 .summary-take .hl { padding: 0 0.1em; }
+
+.delta .per-short { display: none; }
+@media (max-width: 760px) { .stat .delta .per-long { display: none; } .stat .delta .per-short { display: inline; } }

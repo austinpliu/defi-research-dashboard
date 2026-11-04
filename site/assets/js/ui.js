@@ -209,7 +209,10 @@ export function delta(v, per, { upIsGood = true } = {}) {
   const dir = direction(v);
   const good = dir === 'flat' ? 'flat' : (dir === 'up') === upIsGood ? 'up' : 'down';
   const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '■';
-  return h('span', { class: `delta ${v == null ? 'flat' : good}`, title: per ? `${pct(v)} ${per}` : pct(v) }, v == null ? '— ' : `${arrow} ${pct(v)}`, per ? h('span', { class: 'per' }, per) : null);
+  // long label on wide screens ("7d vs prior 7d"), short on phones ("7d")
+  const short = per ? per.split(' ')[0] : null;
+  const perEl = per ? h('span', { class: 'per' }, short !== per ? [h('span', { class: 'per-long' }, per), h('span', { class: 'per-short' }, short)] : per) : null;
+  return h('span', { class: `delta ${v == null ? 'flat' : good}`, title: per ? `${pct(v)} ${per}` : pct(v) }, v == null ? '— ' : `${arrow} ${pct(v)}`, perEl);
 }
 
 /**
