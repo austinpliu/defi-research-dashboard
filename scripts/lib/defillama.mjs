@@ -439,11 +439,14 @@ export function buildProtocolCore(raw, slug) {
     return out;
   }
 
+  // the fees summary for the same protocol often carries a category / chain list
+  // when the protocol profile doesn't (parents, some single protocols)
+  const feeMeta = raw.fees?.ok ? raw.fees.data : raw.revenue?.ok ? raw.revenue.data : null;
   out.about = {
     name: p.name,
     description: firstSentences(p.description, 2),
-    category: p.category || null,
-    chains: p.chains || [],
+    category: p.category || (typeof feeMeta?.category === 'string' ? feeMeta.category : null),
+    chains: p.chains?.length ? p.chains : Array.isArray(feeMeta?.chains) ? feeMeta.chains : [],
     logo: p.logo || null,
     url: p.url || null,
     twitter: p.twitter ? `https://x.com/${p.twitter}` : null,
