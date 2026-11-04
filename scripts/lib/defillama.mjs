@@ -11,7 +11,7 @@
 // once and report the result honestly if it is refused.
 import {
   normSeries, dailySeries, changeOverDays, allTimeHigh, lastPoint, trimDays,
-  compactSeries, roundSmart, num, pctChange, firstSentences, weeklySeries, slugify, DAY,
+  compactSeries, roundSmart, num, pctChange, firstSentences, weeklySeries, slugify, sumLastDays, DAY,
 } from './util.mjs';
 import { sourceRecord } from './sources.mjs';
 
@@ -554,10 +554,12 @@ export function buildProtocolCore(raw, slug) {
     note: 'Amounts are in millions of USD, as reported by DefiLlama.',
     src: 'dl-protocol',
   };
+  const seenHm = new Set();
   out.hallmarks = {
     list: (p.hallmarks || [])
       .filter((h) => Array.isArray(h) && h.length >= 2)
       .map(([ts, text]) => ({ ts: Array.isArray(ts) ? ts[0] : ts, text }))
+      .filter((h) => { const k = `${h.ts}|${h.text}`; return seenHm.has(k) ? false : (seenHm.add(k), true); })
       .sort((a, b) => b.ts - a.ts),
     src: 'dl-protocol',
   };
@@ -576,6 +578,10 @@ function summarizeFees(res, src) {
   const d = res.data;
   const s = dailySeries(normSeries(d.totalDataChart || []));
   if (!s.length && d.total24h == null) return { unavailable: 'DefiLlama has no data of this type for this protocol', src };
+  // The summary endpoint doesn't always include window-over-window changes;
+  // when it doesn't, compute them from the same daily series (and say so).
+  const calc7 = d.change_7dover7d == null ? pctChange(sumLastDays(s, 7), sumLastDays(s, 7, 7)) : null;
+  const calc30 = d.change_30dover30d == null ? pctChange(sumLastDays(s, 30), sumLastDays(s, 30, 30)) : null;
   return {
     total24h: roundSmart(d.total24h),
     total7d: roundSmart(d.total7d),
@@ -583,8 +589,9 @@ function summarizeFees(res, src) {
     total1y: roundSmart(d.total1y),
     totalAllTime: roundSmart(d.totalAllTime),
     change1d: roundSmart(d.change_1d),
-    change7dOver7d: roundSmart(d.change_7dover7d ?? null),
-    change30dOver30d: roundSmart(d.change_30dover30d ?? null),
+    change7dOver7d: roundSmart(d.change_7dover7d ?? calc7),
+    change30dOver30d: roundSmart(d.change_30dover30d ?? calc30),
+    changesCalculated: d.change_30dover30d == null && calc30 != null,
     series: compactSeries(s),
     methodology: d.methodology || null,
     src,

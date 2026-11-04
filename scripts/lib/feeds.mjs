@@ -6,7 +6,7 @@ import { truncate, mentions, slugify } from './util.mjs';
 
 // Words that suggest an item is about a launch or an upgrade. Used only to
 // label items; the label is shown as "type: launch / upgrade (keyword match)".
-const LAUNCH_RE = /\b(launch(es|ed|ing)?|upgrade[sd]?|mainnet|migrat(e|es|ed|ion)|deploy(s|ed|ment)?|goes live|is live|now live|went live|introduc(es|ing)|unveil(s|ed)?|release[sd]?|v[2-9])\b/i;
+const LAUNCH_RE = /\b(launch(es|ed|ing)?|upgrade[sd]?|mainnet|migrat(e|es|ed|ion)|deploy(s|ed|ment)?|goes live|is live|now live|went live|introduc(es|ing)|unveil(s|ed)?|release[sd]?)\b/i;
 const DEFI_RE = /\b(DeFi|stablecoins?|TVL|DEX|lending|tokeni[sz]ed|RWA|real[- ]world assets?|yield|perps?|perpetuals?)\b/i;
 
 export async function fetchFeed(http, feed) {

@@ -187,6 +187,20 @@ async function main() {
     probe(`protocol ${slug}`, r.protocol);
     probe(`fees ${slug}`, r.fees);
     const core = buildProtocolCore(r, slug);
+    // Parent protocols carry no category/chains of their own; use their children's.
+    if (core.about && protocolList) {
+      const kids = protocolList.filter((x) => x.parentProtocol === `parent#${slug}`);
+      if (!core.about.category && kids.length) {
+        const counts = {};
+        for (const k of kids) if (k.category) counts[k.category] = (counts[k.category] || 0) + (k.tvl || 0) + 1;
+        core.about.category = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+      }
+      if (!core.about.chains?.length) {
+        const set = new Set(kids.flatMap((k) => k.chains || []));
+        for (const c of core.chainTvl?.list || []) set.add(c.chain);
+        core.about.chains = [...set];
+      }
+    }
     const doc = {
       slug,
       configuredSlug: entry.defillama,
