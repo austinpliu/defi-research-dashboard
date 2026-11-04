@@ -1,0 +1,216 @@
+{
+  "_readme": "This file controls what the dashboard tracks. Edit it by hand, save, and push (or run the 'Update data' action). See README > 'How to add a protocol'. Only 'name' and 'defillama' are required for each protocol; everything else is optional and the data script fills in what it can find.",
+  "protocols": [
+    {
+      "name": "Maple Finance",
+      "defillama": "maple",
+      "coingecko": "syrup",
+      "symbol": "SYRUP",
+      "keywords": [
+        "Maple Finance",
+        "SYRUP",
+        "syrupUSDC",
+        "syrupUSDT"
+      ],
+      "links": {
+        "docs": "https://docs.maple.finance"
+      },
+      "feeds": [
+        {
+          "name": "Maple governance forum",
+          "url": "https://community.maple.finance/latest.rss",
+          "type": "governance-forum"
+        }
+      ]
+    },
+    {
+      "name": "Aave",
+      "defillama": "aave",
+      "coingecko": "aave",
+      "symbol": "AAVE",
+      "keywords": [
+        "Aave",
+        "AAVE",
+        "GHO"
+      ],
+      "links": {
+        "docs": "https://aave.com/docs"
+      },
+      "feeds": [
+        {
+          "name": "Aave governance forum",
+          "url": "https://governance.aave.com/latest.rss",
+          "type": "governance-forum"
+        }
+      ],
+      "snapshot": [
+        "aavedao.eth"
+      ]
+    },
+    {
+      "name": "Ondo Finance",
+      "defillama": "ondo-finance",
+      "coingecko": "ondo-finance",
+      "symbol": "ONDO",
+      "keywords": [
+        "Ondo",
+        "ONDO",
+        "USDY",
+        "OUSG"
+      ],
+      "links": {
+        "docs": "https://docs.ondo.finance"
+      },
+      "feeds": []
+    },
+    {
+      "name": "Centrifuge",
+      "defillama": "centrifuge",
+      "coingecko": "centrifuge-2",
+      "symbol": "CFG",
+      "keywords": [
+        "Centrifuge",
+        "CFG"
+      ],
+      "links": {
+        "docs": "https://docs.centrifuge.io"
+      },
+      "feeds": [
+        {
+          "name": "Centrifuge governance forum",
+          "url": "https://gov.centrifuge.io/latest.rss",
+          "type": "governance-forum"
+        }
+      ]
+    },
+    {
+      "name": "Sky",
+      "defillama": "sky",
+      "coingecko": "sky",
+      "symbol": "SKY",
+      "keywords": [
+        "Sky Protocol",
+        "Sky ecosystem",
+        "Sky Money",
+        "MakerDAO",
+        "USDS",
+        "SKY"
+      ],
+      "links": {
+        "docs": "https://developers.sky.money"
+      },
+      "feeds": [
+        {
+          "name": "Sky governance forum",
+          "url": "https://forum.sky.money/latest.rss",
+          "type": "governance-forum"
+        }
+      ]
+    },
+    {
+      "name": "Hyperliquid",
+      "defillama": "hyperliquid",
+      "coingecko": "hyperliquid",
+      "symbol": "HYPE",
+      "keywords": [
+        "Hyperliquid",
+        "HyperEVM",
+        "HYPE"
+      ],
+      "links": {
+        "docs": "https://hyperliquid.gitbook.io/hyperliquid-docs"
+      },
+      "feeds": [
+        {
+          "name": "Hyperliquid blog",
+          "url": "https://hyperliquid.medium.com/feed",
+          "type": "blog"
+        }
+      ]
+    },
+    {
+      "name": "Pendle",
+      "defillama": "pendle",
+      "coingecko": "pendle",
+      "symbol": "PENDLE",
+      "keywords": [
+        "Pendle",
+        "PENDLE"
+      ],
+      "links": {
+        "docs": "https://docs.pendle.finance"
+      },
+      "feeds": [
+        {
+          "name": "Pendle blog",
+          "url": "https://medium.com/feed/pendle",
+          "type": "blog"
+        }
+      ]
+    }
+  ],
+  "_peers_readme": "Peers get full protocol pages and can be picked in the Compare view, but they are not part of your watchlist strip or catalysts. Delete any you don't need.",
+  "peers": [
+    {
+      "name": "Morpho",
+      "defillama": "morpho",
+      "coingecko": "morpho",
+      "symbol": "MORPHO",
+      "keywords": [
+        "Morpho"
+      ]
+    },
+    {
+      "name": "Ethena",
+      "defillama": "ethena",
+      "coingecko": "ethena",
+      "symbol": "ENA",
+      "keywords": [
+        "Ethena",
+        "USDe",
+        "ENA"
+      ]
+    },
+    {
+      "name": "Compound",
+      "defillama": "compound-finance",
+      "coingecko": "compound-governance-token",
+      "symbol": "COMP",
+      "keywords": [
+        "Compound Finance",
+        "COMP"
+      ]
+    }
+  ],
+  "_newsFeeds_readme": "Crypto news RSS feeds. Headlines that mention a watchlist protocol (using its keywords) show up in Catalysts and on its page.",
+  "newsFeeds": [
+    {
+      "name": "CoinDesk",
+      "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"
+    },
+    {
+      "name": "The Block",
+      "url": "https://www.theblock.co/rss.xml"
+    },
+    {
+      "name": "Decrypt",
+      "url": "https://decrypt.co/feed"
+    },
+    {
+      "name": "Cointelegraph",
+      "url": "https://cointelegraph.com/rss"
+    },
+    {
+      "name": "Blockworks",
+      "url": "https://blockworks.co/feed"
+    },
+    {
+      "name": "DL News",
+      "url": "https://www.dlnews.com/arc/outboundfeeds/rss/"
+    },
+    {
+      "name": "The Defiant",
+      "url": "https://thedefiant.io/feed"
+    }
+  ]
+}

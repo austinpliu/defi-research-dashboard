@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DeFi Research Dashboard</title>
+  <meta name="description" content="A keyless DeFi research dashboard: TVL, fees, revenue, stablecoins, tokens, governance and catalysts from free public APIs, each number linked to its source.">
+  <meta name="theme-color" content="#f2efe6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12110f" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e0e0c'/%3E%3Crect x='20' y='22' width='12' height='10' fill='%23f9a83f'/%3E%3Ctext x='8' y='23' font-family='Arial Black,Arial' font-weight='900' font-size='19' fill='%23f2efe6'%3ED%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="assets/fonts/inter-tight-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script>
+    // apply a saved light/dark choice before first paint (no flash)
+    try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <script src="vendor/echarts/echarts.min.js" defer></script>
+  <script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar" id="topbar"></header>
+  <main id="main" tabindex="-1">
+    <div class="loading" aria-busy="true">Loading…</div>
+  </main>
+  <footer class="site">
+    <span>Every number comes from a free public source (DefiLlama, CoinGecko, GeckoTerminal, DexScreener, Snapshot, RSS feeds) and links to it. Information, not investment advice. <span id="footer-meta"></span></span>
+    <span><a href="#/sources">Sources &amp; data status</a> · <a href="#/glossary">Glossary</a> · <a href="https://github.com/austinpliu/defi-research-dashboard" target="_blank" rel="noopener">Code</a></span>
+  </footer>
+  <noscript><p style="padding:24px">This dashboard needs JavaScript to draw its charts.</p></noscript>
+</body>
+</html>

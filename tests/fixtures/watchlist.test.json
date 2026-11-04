@@ -1,0 +1,11 @@
+{
+  "protocols": [
+    { "name": "Alpha", "defillama": "alpha", "coingecko": "alpha-token", "symbol": "ALP", "keywords": ["Alpha", "ALP"], "links": { "docs": "https://example.com/docs" }, "feeds": [{ "name": "Alpha forum", "url": "https://forum.example.com/latest.rss", "type": "governance-forum" }] },
+    { "name": "Missing Coin Protocol", "defillama": "beta", "coingecko": "missing-coin", "symbol": "MIS" }
+  ],
+  "peers": [{ "name": "Gamma", "defillama": "gamma", "coingecko": "gamma-token", "symbol": "GAM" }],
+  "newsFeeds": [
+    { "name": "Test News", "url": "https://news.example.com/rss" },
+    { "name": "Broken Feed", "url": "https://broken-feed.example.com/rss" }
+  ]
+}
