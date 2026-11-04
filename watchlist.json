@@ -30,14 +30,12 @@
       "symbol": "ONDO",
       "keywords": ["Ondo", "ONDO", "USDY", "OUSG"],
       "links": { "docs": "https://docs.ondo.finance" },
-      "feeds": [
-        { "name": "Ondo governance forum", "url": "https://forum.ondo.foundation/latest.rss", "type": "governance-forum" }
-      ]
+      "feeds": []
     },
     {
       "name": "Centrifuge",
       "defillama": "centrifuge",
-      "coingecko": "centrifuge",
+      "coingecko": "centrifuge-2",
       "symbol": "CFG",
       "keywords": ["Centrifuge", "CFG"],
       "links": { "docs": "https://docs.centrifuge.io" },

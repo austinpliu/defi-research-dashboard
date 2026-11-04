@@ -158,12 +158,21 @@ export function decodeEntities(s) {
     .replace(/&hellip;/g, '…');
 }
 
-/** First n sentences of a description. */
+/**
+ * First n sentences of a description. Doesn't split on abbreviations such as
+ * "U.S.", "e.g." or "Inc.", or on decimals like "3.5".
+ */
 export function firstSentences(text, n = 2) {
   const clean = stripHtml(text || '');
   if (!clean) return '';
-  const parts = clean.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || [clean];
-  return parts.slice(0, n).join('').trim();
+  const pieces = clean.split(/(?<=[.!?])\s+(?=["“(A-Z0-9])/);
+  const ABBR = /(\b(?:[A-Z]\.){1,3}|\b(?:e\.g|i\.e|etc|vs|inc|ltd|co|corp|no|st|mr|ms|dr|jr|sr|approx|est)\.)$/i;
+  const sentences = [];
+  for (const piece of pieces) {
+    if (sentences.length && ABBR.test(sentences[sentences.length - 1])) sentences[sentences.length - 1] += ` ${piece}`;
+    else sentences.push(piece);
+  }
+  return sentences.slice(0, n).join(' ').trim();
 }
 
 export function truncate(s, max = 220) {

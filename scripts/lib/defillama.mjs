@@ -11,7 +11,7 @@
 // once and report the result honestly if it is refused.
 import {
   normSeries, dailySeries, changeOverDays, allTimeHigh, lastPoint, trimDays,
-  compactSeries, roundSmart, num, pctChange, firstSentences, weeklySeries, DAY,
+  compactSeries, roundSmart, num, pctChange, firstSentences, weeklySeries, slugify, DAY,
 } from './util.mjs';
 import { sourceRecord } from './sources.mjs';
 
@@ -34,6 +34,9 @@ export function isChainKey(k) {
 }
 
 const NOT_PROTOCOL_CATEGORIES = new Set(['CEX', 'Chain']);
+// Bridges hold assets that are already counted on the chains they bridge to, so
+// DefiLlama's headline TVL leaves them out; we do the same for categories and movers.
+const BRIDGE_CATEGORIES = new Set(['Bridge', 'Canonical Bridge']);
 
 export async function fetchGlobal(http) {
   const get = (url, label) => http.json(url, { label });
@@ -232,7 +235,7 @@ export function buildMarket(raw, extra) {
   let categories = { list: [], src: plSrc, unavailable: raw.protocols.error };
   let movers = { gainers: [], losers: [], src: plSrc, unavailable: raw.protocols.error };
   if (raw.protocols.ok && Array.isArray(raw.protocols.data)) {
-    const list = raw.protocols.data.filter((p) => !NOT_PROTOCOL_CATEGORIES.has(p.category) && num(p.tvl) > 0);
+    const list = raw.protocols.data.filter((p) => !NOT_PROTOCOL_CATEGORIES.has(p.category) && !BRIDGE_CATEGORIES.has(p.category) && num(p.tvl) > 0);
     const byCat = new Map();
     for (const p of list) {
       const c = p.category || 'Other';
@@ -245,6 +248,7 @@ export function buildMarket(raw, extra) {
     const catTotal = catList.reduce((s, c) => s + c.tvl, 0);
     categories = {
       list: catList.slice(0, 14).map((c) => ({ ...c, tvl: roundSmart(c.tvl), share: roundSmart((c.tvl / catTotal) * 100) })),
+      excluded: [...BRIDGE_CATEGORIES, ...NOT_PROTOCOL_CATEGORIES],
       src: plSrc,
     };
     const MIN_TVL = 100e6;
@@ -311,7 +315,7 @@ export function buildMarket(raw, extra) {
         change7d: roundSmart(pctChange(a.circulating, a.prevWeek)),
         change30d: roundSmart(pctChange(a.circulating, a.prevMonth)),
         share: roundSmart((a.circulating / total) * 100),
-        page: `${DL.site}/stablecoin/${a.geckoId || a.id}`,
+        page: `${DL.site}/stablecoin/${slugify(a.name)}`,
       })),
       other: {
         count: rest.length,
@@ -459,8 +463,24 @@ export function buildProtocolCore(raw, slug) {
     src: 'dl-protocol',
   };
 
-  // TVL history (default TVL, excludes borrowed/staking/pool2 like DefiLlama's site)
-  const tvlSeries = dailySeries(normSeries(p.tvl || [], { tsKey: 'date', valKey: 'totalLiquidityUSD' }));
+  // TVL history (default TVL, excludes borrowed/staking/pool2 like DefiLlama's site).
+  // Some parent protocols (e.g. RWA issuers) come back with an empty combined
+  // series but full per-chain series; then we add the chains up ourselves.
+  let tvlSeries = dailySeries(normSeries(p.tvl || [], { tsKey: 'date', valKey: 'totalLiquidityUSD' }));
+  let tvlNote = null;
+  if (!tvlSeries.length && p.chainTvls) {
+    const byDay = new Map();
+    const chainsUsed = [];
+    for (const [k, v] of Object.entries(p.chainTvls)) {
+      if (!isChainKey(k) || !Array.isArray(v?.tvl) || !v.tvl.length) continue;
+      chainsUsed.push(k);
+      for (const [ts, val] of dailySeries(normSeries(v.tvl, { tsKey: 'date', valKey: 'totalLiquidityUSD' }))) byDay.set(ts, (byDay.get(ts) || 0) + val);
+    }
+    tvlSeries = [...byDay.entries()].sort((x, y) => x[0] - y[0]);
+    // drop a trailing day where only some chains have reported yet
+    if (tvlSeries.length > 2 && tvlSeries[tvlSeries.length - 1][1] < tvlSeries[tvlSeries.length - 2][1] * 0.5) tvlSeries.pop();
+    if (tvlSeries.length) tvlNote = `DefiLlama returned no combined TVL series for this protocol, so this is the sum of its per-chain series (${chainsUsed.join(', ')}).`;
+  }
   const ath = allTimeHigh(tvlSeries);
   const current = lastPoint(tvlSeries);
   out.tvl = {
@@ -473,11 +493,19 @@ export function buildProtocolCore(raw, slug) {
     change1y: roundSmart(changeOverDays(tvlSeries, 365)),
     ath: ath ? { value: roundSmart(ath.value), ts: ath.ts } : null,
     series: compactSeries(tvlSeries),
+    note: tvlNote,
     src: 'dl-protocol',
   };
 
-  // Current TVL by chain
-  const cur = p.currentChainTvls || {};
+  // Current TVL by chain (fall back to the last point of each chain series)
+  let cur = p.currentChainTvls || {};
+  if (!Object.keys(cur).length && p.chainTvls) {
+    cur = {};
+    for (const [k, v] of Object.entries(p.chainTvls)) {
+      const last = Array.isArray(v?.tvl) && v.tvl.length ? v.tvl[v.tvl.length - 1] : null;
+      if (last) cur[k] = num(last.totalLiquidityUSD);
+    }
+  }
   const chainRows = Object.entries(cur)
     .filter(([k, v]) => isChainKey(k) && num(v) > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -589,22 +617,30 @@ export function poolsForProtocol(poolsRes, slugs, limit = 12) {
 
 // ---------- Hacks ----------
 
-export function hacksForProtocol(hacksRes, names) {
+export function hacksForProtocol(hacksRes, names, ids = new Set()) {
   if (!hacksRes.ok || !Array.isArray(hacksRes.data)) return null;
-  const lower = names.map((n) => n.toLowerCase());
+  const lower = names.filter(Boolean).map((n) => n.toLowerCase());
   return hacksRes.data
-    .filter((h) => lower.includes(String(h.name || '').toLowerCase()) || lower.some((n) => String(h.name || '').toLowerCase().startsWith(`${n} `)))
+    .filter((h) => (h.defillamaId != null && ids.has(String(h.defillamaId))) || lower.includes(String(h.name || '').toLowerCase()))
     .map((h) => ({
       date: h.date,
       name: h.name,
       amount: num(h.amount),
       technique: h.technique || null,
       classification: h.classification || null,
-      chain: h.chain || null,
+      chain: Array.isArray(h.chain) ? h.chain.join(', ') : h.chain || null,
       returnedFunds: num(h.returnedFunds),
       source: h.source || null,
     }))
     .sort((a, b) => b.date - a.date);
+}
+
+/** DefiLlama ids of a parent and its children (to match the hacks database). */
+export function familyIds(protocolList, slug, ownId) {
+  const out = new Set(ownId ? [String(ownId)] : []);
+  if (!Array.isArray(protocolList)) return out;
+  for (const p of protocolList) if (p.parentProtocol === `parent#${slug}` || p.slug === slug) out.add(String(p.id));
+  return out;
 }
 
 // ---------- Chain + stablecoin history helpers ----------

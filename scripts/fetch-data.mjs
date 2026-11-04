@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { Http } from './lib/http.mjs';
 import {
   DL, fetchGlobal, buildMarket, buildScreener, fetchProtocolRaw, buildProtocolCore, resolveSlug,
-  childSlugs, poolsForProtocol, hacksForProtocol, fetchChainHistory, fetchStableHistory, fetchLlamaCoin,
+  childSlugs, familyIds, poolsForProtocol, hacksForProtocol, fetchChainHistory, fetchStableHistory, fetchLlamaCoin,
 } from './lib/defillama.mjs';
 import { fetchCoinRaw, buildToken, applyLlamaFallback, searchCoin } from './lib/coingecko.mjs';
 import { fetchNetworkMap, fetchTokenPools } from './lib/dex.mjs';
@@ -123,7 +123,7 @@ async function main() {
   http.configureHost('yields.llama.fi', { minIntervalMs: 300, concurrency: 1 });
   http.configureHost('coins.llama.fi', { minIntervalMs: 300, concurrency: 2 });
   http.configureHost('api.coingecko.com', { minIntervalMs: 7000, concurrency: 1 });
-  http.configureHost('api.geckoterminal.com', { minIntervalMs: 2300, concurrency: 1 });
+  http.configureHost('api.geckoterminal.com', { minIntervalMs: 3500, concurrency: 1 });
   http.configureHost('api.dexscreener.com', { minIntervalMs: 400, concurrency: 1 });
   http.configureHost('hub.snapshot.org', { minIntervalMs: 1500, concurrency: 1 });
 
@@ -215,7 +215,8 @@ async function main() {
 
     // hacks / incidents
     const names = [entry.name, core.about?.name, ...(core.about?.otherProtocols || [])].filter(Boolean);
-    const hacks = hacksForProtocol(raw.hacks, names);
+    const ids = familyIds(protocolList, slug, r.protocol.data?.id);
+    const hacks = hacksForProtocol(raw.hacks, names, ids);
     doc.sources['dl-hacks'] = hacksSrc;
     doc.hacks = hacks ? { list: hacks, src: 'dl-hacks' } : { unavailable: hacksSrc.error, note: hacksSrc.note, src: 'dl-hacks' };
 
@@ -232,9 +233,17 @@ async function main() {
   }
   const tokens = [];
   for (const job of tokenJobs) {
-    const { id } = job;
-    const r = await fetchCoinRaw(http, id);
+    let { id } = job;
+    let r = await fetchCoinRaw(http, id);
     probe(`coin ${id}`, r.coin);
+    // CoinGecko renames migrated tokens "Name [OLD]"; DefiLlama usually knows the new id.
+    const dlId = job.protocol.doc.about?.geckoId;
+    if (r.coin.ok && /\[old\]|\(old\)/i.test(r.coin.data?.name || '') && dlId && dlId !== id) {
+      problem('warn', `CoinGecko id "${id}" is "${r.coin.data.name}" (a retired token); using DefiLlama's id "${dlId}" instead`, `Change "coingecko" for ${job.protocol.entry.name} in watchlist.json to "${dlId}"`);
+      id = dlId;
+      job.id = dlId;
+      r = await fetchCoinRaw(http, id);
+    }
     let token = buildToken(r, id);
     if (r.coin.status === 404) {
       const hits = await searchCoin(http, job.protocol.entry.symbol || job.protocol.entry.name);
@@ -259,15 +268,24 @@ async function main() {
 
   // 4. DEX liquidity (GeckoTerminal, DexScreener fallback) --------------------
   console.log('\n== DEX liquidity');
-  const { map: networkMap, res: netRes } = await fetchNetworkMap(http);
-  if (!netRes?.ok) problem('warn', `GeckoTerminal network list failed (${netRes?.error}); DEX pools will use DexScreener only`);
+  // GeckoTerminal's network list is only fetched if some platform needs it
+  let networkMapPromise = null;
+  const getNetworkMap = () => {
+    if (!networkMapPromise) {
+      networkMapPromise = fetchNetworkMap(http).then(({ map, res }) => {
+        if (!res?.ok) problem('warn', `GeckoTerminal network list failed (${res?.error}); some DEX pools may be missing`);
+        return map;
+      });
+    }
+    return networkMapPromise;
+  };
   for (const t of tokens) {
     const platforms = t.profile?.platforms;
     if (!platforms || !Object.keys(platforms).length) {
       t.dex = { unavailable: t.profile ? 'CoinGecko lists no contract addresses for this token (it may be native to its own chain)' : 'Token profile unavailable, so contract addresses are unknown', pools: [] };
       continue;
     }
-    const d = await fetchTokenPools(http, platforms, networkMap);
+    const d = await fetchTokenPools(http, platforms, getNetworkMap);
     t.sources = { ...t.sources, ...d.sources };
     t.dex = { pools: d.pools, totalLiquidity: d.totalLiquidity, totalVolume24h: d.totalVolume24h, poolCount: d.poolCount, attempted: d.attempted };
     if (!d.pools.length) t.dex.unavailable = d.attempted.map((a) => `${a.platform}: ${a.error || 'no pools'}`).join('; ') || 'No pools found';
@@ -303,7 +321,7 @@ async function main() {
     const props = gov.proposals.filter((x) => p.spaces.includes(x.space));
     p.doc.sources.snapshot = gov.source || sourceRecord({ name: 'Snapshot', label: 'Governance proposals', page: 'https://snapshot.org', res: { ok: false, error: 'No Snapshot space found for this protocol' } });
     p.doc.governance = p.spaces.length
-      ? { spaces: p.spaces, proposals: props, src: 'snapshot', ...(gov.source?.ok ? {} : { unavailable: gov.source?.error }) }
+      ? { spaces: p.spaces, spaceInfo: Object.fromEntries(p.spaces.map((s) => [s, gov.spaceInfo?.[s] || null])), proposals: props, src: 'snapshot', ...(gov.source?.ok ? {} : { unavailable: gov.source?.error }) }
       : { spaces: [], proposals: [], src: 'snapshot', unavailable: 'No Snapshot space found in DefiLlama or CoinGecko data for this protocol (it may vote on-chain or elsewhere)' };
   }
 
@@ -378,7 +396,7 @@ async function main() {
     const doc = p.doc;
     const t = p.token;
     if (t) {
-      doc.token = { id: t.id, symbol: t.symbol, name: t.name, market: t.market || null, supply: t.supply || null, unavailable: t.unavailable || null };
+      doc.token = { id: t.id, symbol: t.symbol, name: t.name, description: t.profile?.description || null, market: t.market || null, supply: t.supply || null, unavailable: t.unavailable || null };
       doc.tokenSeries = t.series || null;
       for (const [k, v] of Object.entries(t.sources)) if (k.startsWith('cg-') || k.startsWith('dl-coin')) doc.sources[k] = v;
     } else {
@@ -429,7 +447,8 @@ async function main() {
 
   // 9. Catalysts ---------------------------------------------------------------
   const now = Date.now();
-  const govItems = gov.proposals.map((x) => {
+  const govWindowStart = Date.now() / 1000 - 45 * 86400;
+  const govItems = gov.proposals.filter((x) => x.state !== 'closed' || x.end >= govWindowStart).map((x) => {
     const owner = spaceOwner.get(x.space);
     const isOpen = x.state === 'active';
     const isPending = x.state === 'pending';

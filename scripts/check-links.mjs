@@ -91,6 +91,14 @@ async function main() {
         continue;
       }
       const r = await http.text(url, { label: 'link check', retries: 1, timeoutMs: 25000, backoffMs: 3000 });
+      // Bot protection (e.g. Cloudflare's "Just a moment...") or rate limits mean
+      // "couldn't check automatically", not "broken".
+      const bodyStart = String(r.data || r.error || '').slice(0, 3000);
+      if (!r.ok && (r.status === 429 || ((r.status === 403 || r.status === 503) && /just a moment|cf-chl|cloudflare|attention required|captcha|access denied|<!DOCTYPE html/i.test(bodyStart)))) {
+        results.push({ url, where: [...where].slice(0, 5), ok: null, status: r.status, note: r.status === 429 ? 'Rate-limited during the check — open by hand' : 'Site blocks automated checks (bot protection) — open by hand', checkedAt: r.fetchedAt });
+        process.stdout.write('~');
+        continue;
+      }
       const isHtml = typeof r.data === 'string' && /<html|<title/i.test(r.data.slice(0, 5000));
       const title = isHtml ? stripHtml((r.data.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '').slice(0, 140) : null;
       results.push({

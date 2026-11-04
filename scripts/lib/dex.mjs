@@ -1,9 +1,9 @@
 // DEX liquidity for a token.
-// Primary: GeckoTerminal public API (api.geckoterminal.com/api/v2, keyless, 30 calls/min)
+// Primary: DexScreener (api.dexscreener.com, keyless, 300 calls/min) for chains we can map.
+// Fallback: GeckoTerminal public API (api.geckoterminal.com/api/v2, keyless, 30 calls/min)
 //   /networks?page=N                         → maps CoinGecko platform ids to GeckoTerminal network ids
 //   /networks/{network}/tokens/{address}/pools → top pools for a token
-// Fallback: DexScreener (api.dexscreener.com, keyless, 300 calls/min)
-//   /token-pairs/v1/{chainId}/{tokenAddress}
+//   DexScreener /token-pairs/v1/{chainId}/{tokenAddress}
 import { num, roundSmart } from './util.mjs';
 import { sourceRecord } from './sources.mjs';
 
@@ -72,7 +72,7 @@ function gtPool(p, included, network) {
  * Fetch top pools for every platform the token lives on.
  * Returns { pools, sources, attempted }.
  */
-export async function fetchTokenPools(http, platforms, networkMap, { maxPlatforms = 4 } = {}) {
+export async function fetchTokenPools(http, platforms, getNetworkMap, { maxPlatforms = 3 } = {}) {
   const entries = Object.entries(platforms || {}).filter(([, addr]) => addr);
   // Ethereum first, then the rest in CoinGecko's order
   entries.sort((a, b) => (a[0] === 'ethereum' ? -1 : b[0] === 'ethereum' ? 1 : 0));
@@ -80,32 +80,20 @@ export async function fetchTokenPools(http, platforms, networkMap, { maxPlatform
   const sources = {};
   const attempted = [];
   for (const [platform, address] of entries.slice(0, maxPlatforms)) {
-    const network = networkMap[platform];
     let got = false;
-    if (network) {
-      const url = `${GT.api}/networks/${network}/tokens/${address}/pools?include=dex&page=1`;
-      const r = await http.json(url, { label: `GeckoTerminal pools ${platform}`, headers: GT_HEADERS, retries: 2, backoffMs: 15000 });
-      const key = `gt-${network}`;
-      sources[key] = sourceRecord({ name: 'GeckoTerminal', label: `DEX pools on ${platform}`, page: `${GT.site}/${network}/tokens/${address}`, res: r });
-      attempted.push({ platform, network, ok: r.ok, error: r.error });
-      if (r.ok && Array.isArray(r.data?.data)) {
-        const included = new Map((r.data.included || []).map((i) => [`${i.type}:${i.id}`, i]));
-        for (const p of r.data.data) pools.push({ ...gtPool(p, included, network), src: key });
-        got = true;
-      }
-    }
-    if (!got && DEXSCREENER_CHAINS[platform]) {
-      const chainId = DEXSCREENER_CHAINS[platform];
+    // 1) DexScreener (generous rate limit) when we know its chain id
+    const chainId = DEXSCREENER_CHAINS[platform];
+    if (chainId) {
       const url = `${DS.api}/token-pairs/v1/${chainId}/${address}`;
       const r = await http.json(url, { label: `DexScreener pairs ${platform}`, retries: 2 });
       const key = `ds-${chainId}`;
       sources[key] = sourceRecord({ name: 'DexScreener', label: `DEX pairs on ${platform}`, page: `${DS.site}/${chainId}/${address}`, res: r });
-      attempted.push({ platform, chainId, ok: r.ok, error: r.error, fallback: true });
-      if (r.ok && Array.isArray(r.data)) {
+      attempted.push({ platform, source: 'DexScreener', ok: r.ok && Array.isArray(r.data), error: r.error });
+      if (r.ok && Array.isArray(r.data) && r.data.length) {
         for (const p of r.data) {
           pools.push({
             name: `${p.baseToken?.symbol || '?'} / ${p.quoteToken?.symbol || '?'}`,
-            dex: p.dexId || null,
+            dex: [p.dexId, ...(p.labels || [])].filter(Boolean).join(' '),
             network: p.chainId,
             address: p.pairAddress,
             liquidity: roundSmart(num(p.liquidity?.usd)),
@@ -118,11 +106,38 @@ export async function fetchTokenPools(http, platforms, networkMap, { maxPlatform
             src: key,
           });
         }
+        got = true;
       }
-    } else if (!got && !network) {
-      attempted.push({ platform, ok: false, error: 'No GeckoTerminal network or DexScreener chain mapping for this platform' });
+    }
+    // 2) GeckoTerminal for chains DexScreener doesn't cover (or when it had nothing)
+    if (!got) {
+      const networkMap = await getNetworkMap();
+      const network = networkMap[platform];
+      if (network) {
+        const url = `${GT.api}/networks/${network}/tokens/${encodeURIComponent(address)}/pools?include=dex&page=1`;
+        const r = await http.json(url, { label: `GeckoTerminal pools ${platform}`, headers: GT_HEADERS, retries: 2, backoffMs: 20000 });
+        const key = `gt-${network}`;
+        sources[key] = sourceRecord({ name: 'GeckoTerminal', label: `DEX pools on ${platform}`, page: `${GT.site}/${network}/tokens/${address}`, res: r });
+        attempted.push({ platform, network, source: 'GeckoTerminal', ok: r.ok, error: r.error });
+        if (r.ok && Array.isArray(r.data?.data)) {
+          const included = new Map((r.data.included || []).map((i) => [`${i.type}:${i.id}`, i]));
+          for (const p of r.data.data) pools.push({ ...gtPool(p, included, network), src: key });
+        }
+      } else if (!chainId) {
+        attempted.push({ platform, ok: false, error: 'No DexScreener chain or GeckoTerminal network for this platform' });
+      }
     }
   }
-  pools.sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
-  return { pools: pools.slice(0, 15), totalLiquidity: roundSmart(pools.reduce((s, p) => s + (p.liquidity || 0), 0)), totalVolume24h: roundSmart(pools.reduce((s, p) => s + (p.volume24h || 0), 0)), poolCount: pools.length, sources, attempted };
+  // the same pool can appear twice (once per side); keep the first
+  const seen = new Set();
+  const unique = pools.filter((p) => (seen.has(p.address) ? false : (seen.add(p.address), true)));
+  unique.sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
+  return {
+    pools: unique.slice(0, 15),
+    totalLiquidity: roundSmart(unique.reduce((s, p) => s + (p.liquidity || 0), 0)),
+    totalVolume24h: roundSmart(unique.reduce((s, p) => s + (p.volume24h || 0), 0)),
+    poolCount: unique.length,
+    sources,
+    attempted,
+  };
 }

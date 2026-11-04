@@ -23,16 +23,18 @@ export function spacesFromSources({ governanceID = [], snapshotUrl = null, overr
 const FULL_FIELDS = 'id title start end state author choices scores scores_total votes quorum discussion link space { id name }';
 const MIN_FIELDS = 'id title start end state choices scores scores_total votes space { id name }';
 
-function query(fields) {
+function query(fields, withSpaces) {
   return `query Gov($spaces: [String], $since: Int) {
   active: proposals(first: 50, where: { space_in: $spaces, state: "active" }, orderBy: "end", orderDirection: asc) { ${fields} }
   pending: proposals(first: 50, where: { space_in: $spaces, state: "pending" }, orderBy: "start", orderDirection: asc) { ${fields} }
   closed: proposals(first: 60, where: { space_in: $spaces, state: "closed", end_gt: $since }, orderBy: "end", orderDirection: desc) { ${fields} }
+  latest: proposals(first: 40, where: { space_in: $spaces }, orderBy: "created", orderDirection: desc) { ${fields} }
+  ${withSpaces ? 'spaces(first: 50, where: { id_in: $spaces }) { id name proposalsCount followersCount }' : ''}
 }`;
 }
 
 export async function fetchProposals(http, spaces, { closedDays = 45 } = {}) {
-  if (!spaces.length) return { proposals: [], source: null };
+  if (!spaces.length) return { proposals: [], source: null, spaceInfo: {} };
   const since = Math.floor(Date.now() / 1000) - closedDays * 86400;
   let res = null;
   for (const fields of [FULL_FIELDS, MIN_FIELDS]) {
@@ -40,7 +42,7 @@ export async function fetchProposals(http, spaces, { closedDays = 45 } = {}) {
       method: 'POST',
       label: 'Snapshot proposals',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query(fields), variables: { spaces, since } }),
+      body: JSON.stringify({ query: query(fields, fields === FULL_FIELDS), variables: { spaces, since } }),
       retries: 2,
     });
     if (res.ok && res.data?.errors?.length) {
@@ -56,8 +58,12 @@ export async function fetchProposals(http, spaces, { closedDays = 45 } = {}) {
     res,
     api: `${SNAPSHOT.hub} (POST, spaces: ${spaces.join(', ')})`,
   });
-  if (!res.ok) return { proposals: [], source };
-  const all = [...(res.data.data?.active || []), ...(res.data.data?.pending || []), ...(res.data.data?.closed || [])];
+  if (!res.ok) return { proposals: [], source, spaceInfo: {} };
+  // latest = most recent proposals per space even if older than the window (dedupe by id)
+  const seen = new Set();
+  const all = [...(res.data.data?.active || []), ...(res.data.data?.pending || []), ...(res.data.data?.closed || []), ...(res.data.data?.latest || [])]
+    .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
+  const spaceInfo = Object.fromEntries((res.data.data?.spaces || []).map((sp) => [sp.id, { name: sp.name, proposalsCount: sp.proposalsCount ?? null, followers: sp.followersCount ?? null }]));
   const proposals = all.map((p) => {
     const scores = (p.scores || []).map(num);
     const total = num(p.scores_total) || scores.reduce((s, v) => s + (v || 0), 0);
@@ -83,5 +89,5 @@ export async function fetchProposals(http, spaces, { closedDays = 45 } = {}) {
       url: p.link || `${SNAPSHOT.site}/#/${p.space?.id}/proposal/${p.id}`,
     };
   });
-  return { proposals, source };
+  return { proposals, source, spaceInfo };
 }
