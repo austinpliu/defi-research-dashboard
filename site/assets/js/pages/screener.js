@@ -1,5 +1,5 @@
 // 06 — All protocols (screener)
-import { h, band, sourceLine, extLink, pageError } from '../ui.js';
+import { h, band, sourceLine, extLink, pageError, takeaway } from '../ui.js';
 import { loadMany } from '../data.js';
 import { dataTable } from '../table.js';
 import { usd, pct } from '../format.js';
@@ -31,7 +31,10 @@ export async function render(root, { query }) {
     rows,
     csvExtra: [{ label: 'DefiLlama page', get: (r) => `https://defillama.com/protocol/${r.slug}` }],
   });
-  root.append(h('section', { class: 'card' }, h('div', { class: 'kicker' }, 'Screener'), h('h3', { class: 'takeaway' }, 'Sort, filter and search all large DeFi protocols'), table,
+  const top10 = rows.slice().sort((a, b) => (b.tvl || 0) - (a.tvl || 0)).slice(0, 10).reduce((s, r) => s + (r.tvl || 0), 0);
+  const all = rows.reduce((s, r) => s + (r.tvl || 0), 0);
+  const scrTake = all > 0 ? { pre: 'The 10 largest protocols here hold ', hl: `${Math.round((top10 / all) * 100)}% of the TVL`, post: ` of these ${rows.length}` } : null;
+  root.append(h('section', { class: 'card' }, h('div', { class: 'kicker' }, 'Screener'), takeaway(scrTake, 'Sort, filter and search all large DeFi protocols'), table,
     h('p', { class: 'src' }, '★ = in your watchlist or peers (click for the full page). ↗ opens the protocol on DefiLlama. Market cap here is DefiLlama’s figure.'),
     sourceLine(Object.values(sc.sources || {}))));
   const q = query.get('q');

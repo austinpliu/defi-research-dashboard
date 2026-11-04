@@ -1,5 +1,5 @@
 // 03 — Tokens overview
-import { h, band, sourceLine, pageError, sparkline } from '../ui.js';
+import { h, band, sourceLine, pageError, sparkline, takeaway } from '../ui.js';
 import { chartCard } from '../cards.js';
 import { loadMany } from '../data.js';
 import { divergingChart } from '../charts.js';
@@ -15,7 +15,10 @@ export async function render(root) {
   const delta = (v) => h('span', { class: `delta ${v > 0 ? 'up' : v < 0 ? 'down' : 'flat'}` }, pct(v));
   root.append(h('section', { class: 'card' },
     h('div', { class: 'kicker' }, 'Prices'),
-    h('h3', { class: 'takeaway' }, 'Token prices and market caps'),
+    (() => {
+      const m = rows.filter((r) => r.mcap).sort((a, b) => b.mcap - a.mcap);
+      return takeaway(m.length >= 2 ? { pre: `${m[0].symbol} is the largest token you track, `, hl: `worth ${usd(m[0].mcap)}`, post: `, ${(m[0].mcap / m[1].mcap).toFixed(1)}x the next one (${m[1].symbol})` } : null, 'Token prices and market caps');
+    })(),
     dataTable({
       caption: 'Tokens', csvName: 'tokens', sortKey: 'mcap', pageSize: 50,
       filters: [{ key: 'category', label: 'Category', plural: 'categories' }, { key: 'chains', label: 'Chain' }, { key: 'groupLabel', label: 'List', plural: 'lists' }],

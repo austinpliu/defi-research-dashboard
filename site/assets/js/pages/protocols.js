@@ -1,11 +1,11 @@
 // 02 — Watchlist protocols overview
-import { h, band, sourceLine, subhead, extLink, pageError, sparkline } from '../ui.js';
+import { h, band, sourceLine, subhead, extLink, pageError, sparkline, takeaway } from '../ui.js';
 import { chartCard } from '../cards.js';
 import { loadMany } from '../data.js';
 import { hbarChart } from '../charts.js';
 import { dataTable } from '../table.js';
 import { usd, pct, ratio } from '../format.js';
-import { leaderTakeaway } from '../takeaways.js';
+import { leaderTakeaway, compareTakeaway } from '../takeaways.js';
 
 export async function render(root) {
   const files = await loadMany(['index.json']);
@@ -44,7 +44,7 @@ export async function render(root) {
   ];
   root.append(h('section', { class: 'card' },
     h('div', { class: 'kicker' }, 'Watchlist + peers'),
-    h('h3', { class: 'takeaway' }, 'Every tracked protocol at a glance'),
+    takeaway(compareTakeaway(watch.filter((r) => r.tvlChange30d != null).map((r) => ({ name: r.name, change: r.tvlChange30d })), 'TVL', 'the last 30 days'), 'Every tracked protocol at a glance'),
     dataTable({ caption: 'Tracked protocols', columns, rows, sortKey: 'tvl', filters: [{ key: 'category', label: 'Category', plural: 'categories' }, { key: 'chains', label: 'Chain' }, { key: 'groupLabel', label: 'List', plural: 'lists' }], csvName: 'watchlist', rowClass: (r) => (r.group === 'watchlist' ? 'is-watch' : null), pageSize: 50 }),
     sourceLine([rows[0]?.srcTvl, rows.find((r) => r.srcPrice)?.srcPrice].filter(Boolean).map((s) => ({ ...s, label: `${s.label} (each protocol page links its exact endpoint)` }))),
     h('p', { class: 'src' }, 'Mcap ÷ annualized fees is calculated here: CoinGecko market cap ÷ (DefiLlama 30-day fees × 365 ÷ 30).')));
