@@ -46,7 +46,7 @@ function collect(value, where, out) {
 }
 
 async function main() {
-  const files = ['market.json', 'catalysts.json', 'index.json', 'screener.json'].map((f) => [f, join(OUT, f)]);
+  const files = ['market.json', 'catalysts.json', 'index.json', 'screener.json', 'coins.json', 'predictions.json'].map((f) => [f, join(OUT, f)]);
   for (const dir of ['protocols', 'tokens']) {
     const d = join(OUT, dir);
     if (existsSync(d)) for (const f of readdirSync(d)) if (f.endsWith('.json')) files.push([`${dir}/${f}`, join(d, f)]);
@@ -57,10 +57,12 @@ async function main() {
     if (!data) continue;
     // the screener has 600 rows; its links follow one pattern, so sample the first 25
     if (name === 'screener.json') data.rows = (data.rows || []).slice(0, 25);
+    // ~400 coins whose links follow one CoinGecko pattern: sample them too
+    if (name === 'coins.json') data.rows = (data.rows || []).slice(0, 25);
     collect(data, name, urls);
   }
   // API documentation linked from the Sources page (written in the site code, not the data)
-  for (const u of ['https://api-docs.defillama.com/', 'https://docs.coingecko.com/docs/keyless-public-api', 'https://docs.dexscreener.com/api/reference', 'https://apiguide.geckoterminal.com/', 'https://docs.snapshot.box/']) {
+  for (const u of ['https://api-docs.defillama.com/', 'https://docs.coingecko.com/docs/keyless-public-api', 'https://docs.dexscreener.com/api/reference', 'https://apiguide.geckoterminal.com/', 'https://docs.snapshot.box/', 'https://docs.polymarket.com/']) {
     if (!urls.has(u)) urls.set(u, new Set(['Sources page (API docs)']));
   }
   // DefiLlama protocol pages for screener rows are built in the browser; check a sample of them too

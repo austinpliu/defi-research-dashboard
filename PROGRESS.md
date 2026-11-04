@@ -1,6 +1,6 @@
 # Progress
 
-_Updated as work happens. Last update: 4 Nov 2026, after data run 14._
+_Updated as work happens. Last update: 5 Nov 2026 (follow-up session: more coins, prediction markets, unlocks check, governance sources)._
 
 ## Done
 - **Data pipeline** (`scripts/fetch-data.mjs` + `scripts/lib/`): DefiLlama, CoinGecko, DexScreener/GeckoTerminal, Snapshot and RSS feeds → `site/data/*.json`, with a source record and fetch time for every dataset. Polite pacing, retries, a rate-limit circuit breaker, a 22-minute time budget, and a 48-hour stale fallback. A run takes about 6 minutes and makes about 130 requests. In run 14, 122 of 128 succeeded. The 6 failures were all expected: two paid-only endpoints (402), "no holders-revenue data" for Ethena (400), and three GeckoTerminal rate limits on minor fallback chains (Berachain, Katana, NEAR), which the token pages mark with ✗ in their list of chains searched.
@@ -10,6 +10,9 @@ _Updated as work happens. Last update: 4 Nov 2026, after data run 14._
 - **Governance:** Snapshot works for Aave (`aavedao.eth`), Morpho and Compound. Queries stay within the hub's limit of 5 top-level selections.
 - **Tests:** 41 unit and pipeline tests (`node --test 'tests/*.test.mjs'`), plus a browser smoke test (`tests/browser/smoke.mjs`) that opens all pages at desktop and phone width. Both run on GitHub Actions. All 10 protocol pages and 10 token pages were also opened in a browser with no JavaScript errors.
 - **Docs:** README (how it works, how to run, how to deploy, how to add a protocol), `DECISIONS.md`.
+- **Deployed:** pull request #1 was merged into `main`, and the 6-hour data updates now run there.
+- **More coins (follow-up item 1):** the Tokens page lists about 400 coins (CoinGecko's 250 largest plus the 250 largest DeFi coins) with price, 24h/7d/30d change, market cap, FDV and volume, tagged DeFi / other. Two keyless requests per run.
+- **Prediction markets (follow-up item 1):** the Catalysts page shows the 25 busiest crypto markets on Polymarket (odds, 24h and all-time volume, liquidity, end date), labelled "market prices, not forecasts", plus prediction-market protocols by TVL and fees from DefiLlama.
 
 ## Not done / known gaps
 - **Deploy:** GitHub Pages needs the repository owner to merge this branch into `main` and switch Settings → Pages → Source to "GitHub Actions" (see README › How to deploy). The publish workflow is ready but can't be switched on from here. The 6-hour schedule also starts only once the workflow is on `main`.

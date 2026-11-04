@@ -18,6 +18,7 @@ import { fetchCoinRaw, buildToken, applyLlamaFallback, searchCoin } from './lib/
 import { fetchNetworkMap, fetchTokenPools } from './lib/dex.mjs';
 import { spacesFromSources, fetchProposals } from './lib/governance.mjs';
 import { fetchFeed, feedItems } from './lib/feeds.mjs';
+import { fetchCoinMarkets, buildCoinRows, fetchPredictionEvents, buildPredictionEvents, predictionProtocols } from './lib/markets.mjs';
 import { sourceRecord, derivedRecord, carryForward } from './lib/sources.mjs';
 import { roundSmart, num, slugify, normSeries, dailySeries, trimDays, compactSeries } from './lib/util.mjs';
 
@@ -577,6 +578,45 @@ async function main() {
     disclaimer: 'Information, not predictions. Each item links to its original source; dates and labels come from that source or from simple keyword rules described on the page.',
   };
 
+  // 9b. Coins beyond the watchlist, and prediction markets -------------------
+  console.log('\n== Coins and prediction markets');
+  const coinRes = await fetchCoinMarkets(http);
+  probe('coin markets', coinRes.all);
+  probe('coin markets (DeFi)', coinRes.defi);
+  const freshCoins = buildCoinRows(coinRes.all, coinRes.defi, new Set(tokens.map((t) => t.id)));
+  const coinsSrc = freshCoins ? coinRes.sources['cg-markets'] : { ...coinRes.sources['cg-markets'], ok: false, error: coinRes.sources['cg-markets'].error || 'Unexpected response shape' };
+  const prevCoins = readJSON(join(OUT, 'coins.json'));
+  const coinCarry = carryForward({ freshData: freshCoins, freshSource: coinsSrc, prevData: prevCoins?.rows ?? null, prevSource: prevCoins?.sources?.['cg-markets'] });
+  if (!coinsSrc.ok) problem('warn', `CoinGecko coin list failed (${coinsSrc.error})`);
+  else if (!coinRes.defi.ok) problem('warn', `CoinGecko DeFi category list failed (${coinRes.defi.error}), so coins aren't tagged DeFi this run`);
+  const coinsDoc = {
+    generatedAt: new Date().toISOString(),
+    rows: coinCarry.data,
+    sources: { ...coinRes.sources, 'cg-markets': coinCarry.source },
+    ...(coinCarry.data ? {} : { unavailable: coinsSrc.error }),
+  };
+
+  const pm = await fetchPredictionEvents(http);
+  probe('polymarket events', pm.res);
+  if (PROBE && pm.res.ok) console.log('   ↳ polymarket event sample:', JSON.stringify((Array.isArray(pm.res.data) ? pm.res.data : pm.res.data?.data || [])[0]).slice(0, 1500));
+  const freshEvents = buildPredictionEvents(pm.res);
+  const pmSrc = freshEvents ? pm.source : { ...pm.source, ok: false, error: pm.source.error || 'Unexpected response shape' };
+  const prevPred = readJSON(join(OUT, 'predictions.json'));
+  const evCarry = carryForward({ freshData: freshEvents, freshSource: pmSrc, prevData: prevPred?.events ?? null, prevSource: prevPred?.sources?.['pm-events'] });
+  if (!pmSrc.ok) problem('warn', `Polymarket prediction markets failed (${pmSrc.error})`);
+  const predictions = {
+    generatedAt: new Date().toISOString(),
+    events: evCarry.data,
+    protocols: predictionProtocols(raw.protocols, fees30dById),
+    sources: {
+      'pm-events': evCarry.source,
+      'dl-protocols': sourceRecord({ name: 'DefiLlama', label: 'Protocols in the Prediction Market category (TVL, 7-day change)', page: `${DL.site}/`, res: raw.protocols }),
+      'dl-fees': sourceRecord({ name: 'DefiLlama', label: 'Fees (30d) per protocol', page: `${DL.site}/fees`, res: raw.fees }),
+    },
+    ...(evCarry.data ? {} : { unavailable: pmSrc.error }),
+    note: 'Prediction-market prices are what traders pay for each outcome, read as probabilities. They are bets, not forecasts by this site.',
+  };
+
   // 10. Index (nav, search, watchlist strip) ----------------------------------
   const index = {
     generatedAt: new Date().toISOString(),
@@ -627,6 +667,8 @@ async function main() {
   writeJSON(join(OUT, 'market.json'), market);
   if (screener) writeJSON(join(OUT, 'screener.json'), { generatedAt: new Date().toISOString(), ...screener });
   writeJSON(join(OUT, 'catalysts.json'), catalysts);
+  writeJSON(join(OUT, 'coins.json'), coinsDoc);
+  writeJSON(join(OUT, 'predictions.json'), predictions);
   writeJSON(join(OUT, 'index.json'), index);
 
   const failed = http.requests.filter((r) => !r.ok);
@@ -639,7 +681,7 @@ async function main() {
       generatedAt: new Date().toISOString(),
       durationSec: Math.round((Date.now() - started) / 1000),
       run,
-      counts: { requests: http.requests.length, failed: failed.length, protocols: protocols.length, tokens: tokens.length, catalysts: catalystItems.length },
+      counts: { requests: http.requests.length, failed: failed.length, protocols: protocols.length, tokens: tokens.length, catalysts: catalystItems.length, coins: coinsDoc.rows?.length ?? 0, predictionMarkets: predictions.events?.length ?? 0 },
       problems,
       requests: http.requests,
     },

@@ -1,11 +1,11 @@
 // 05 — Catalysts: votes, unlocks, launches/upgrades, forum posts, news.
 // Information, not predictions.
-import { h, openExternal, band, sourceLine, extLink, pageError, unavailable, term } from '../ui.js';
+import { h, openExternal, band, sourceLine, extLink, pageError, unavailable, term, takeaway } from '../ui.js';
 import { chartCard } from '../cards.js';
 import { loadSafe } from '../data.js';
 import { timelineChart, themeOf } from '../charts.js';
 import { dataTable } from '../table.js';
-import { date, dateTime, relative, shortDate } from '../format.js';
+import { date, dateTime, relative, shortDate, usd, pct } from '../format.js';
 import { catalystTakeaway } from '../takeaways.js';
 import { setQuery } from '../route.js';
 
@@ -28,7 +28,7 @@ const RANGES = {
 };
 
 export async function render(root, { query }) {
-  const { data: cat, error } = await loadSafe('catalysts.json');
+  const [{ data: cat, error }, predFile] = await Promise.all([loadSafe('catalysts.json'), loadSafe('predictions.json')]);
   if (!cat) { root.append(pageError(error)); return; }
   const S = cat.sources || {};
   const protocols = cat.protocols || [];
@@ -147,6 +147,55 @@ export async function render(root, { query }) {
   }
 
   apply();
+
+  // prediction markets: what traders are paying for crypto outcomes (Polymarket), and the protocols (DefiLlama)
+  const P = predFile.data || {};
+  const PS = P.sources || {};
+  const ev = P.events || [];
+  const share = (v) => pct(v, { signed: false, digits: 0 });
+  const busiest = ev[0];
+  const lead = busiest?.leaders?.[0];
+  root.append(h('section', { class: 'card acc-purple', style: { marginTop: '24px' } },
+    h('div', { class: 'kicker' }, term('Prediction markets', 'predictionMarket')),
+    takeaway(lead ? (lead.label === 'Yes'
+      ? { pre: 'Traders put ', hl: `${share(lead.probability)} on “${busiest.title}”`, post: ', the busiest crypto market on Polymarket in the last 24 hours' }
+      : { pre: `In the busiest crypto market on Polymarket (“${busiest.title}”), `, hl: `traders put ${share(lead.probability)} on “${lead.label}”`, post: '' }) : null, 'What prediction markets are pricing'),
+    h('div', { class: 'disclaimer', role: 'note', style: { margin: '8px 0 12px' } }, h('span', { class: 'chip' }, 'Market prices, not forecasts'), 'Each percentage is what traders are paying for that outcome, read as a probability. These are bets, not predictions by this site.'),
+    ev.length
+      ? dataTable({
+        caption: 'Crypto prediction markets', csvName: 'prediction-markets', sortKey: 'volume24h', pageSize: 25,
+        columns: [
+          { key: 'title', label: 'Market', wrap: true, fmt: (v, r) => h('span', {}, extLink(r.url, v), r.marketCount > 1 ? h('span', { class: 'sub' }, ` · ${r.marketCount} outcomes`) : null) },
+          { key: 'leaders', label: 'Likeliest outcomes', wrap: true, termKey: 'impliedProb', fmt: (v) => (v || []).map((l) => `${l.label} ${share(l.probability)}`).join(' · '), csv: (r) => (r.leaders || []).map((l) => `${l.label} ${l.probability}%`).join('; '), sortValue: (r) => r.leaders?.[0]?.probability ?? -1 },
+          { key: 'volume24h', label: '24h volume', num: true, fmt: (v) => usd(v), termKey: 'pmVolume' },
+          { key: 'volume', label: 'All-time volume', num: true, fmt: (v) => usd(v) },
+          { key: 'liquidity', label: 'Liquidity', num: true, fmt: (v) => usd(v), termKey: 'pmLiquidity' },
+          { key: 'endDate', label: 'Ends', fmt: (v) => (v ? date(v) : '—'), sortValue: (r) => (r.endDate ? Date.parse(r.endDate) : Infinity) },
+        ],
+        rows: ev,
+        csvExtra: [{ label: 'Polymarket page', get: (r) => r.url }],
+      })
+      : unavailable('Prediction markets unavailable', P.unavailable || predFile.error),
+    sourceLine([PS['pm-events']].filter(Boolean))));
+  const PP = P.protocols || [];
+  root.append(h('section', { class: 'card', style: { marginTop: '18px' } },
+    h('div', { class: 'kicker' }, 'Prediction-market protocols'),
+    takeaway(PP.length >= 2 ? { pre: `${PP[0].name} has `, hl: `${usd(PP[0].tvl)} TVL`, post: `, the most of the prediction-market protocols DefiLlama tracks (next: ${PP[1].name}, ${usd(PP[1].tvl)})` } : null, 'Prediction-market protocols by TVL'),
+    PP.length
+      ? dataTable({
+        caption: 'Prediction-market protocols', csvName: 'prediction-market-protocols', sortKey: 'tvl', search: false, pageSize: 12,
+        columns: [
+          { key: 'name', label: 'Protocol', fmt: (v, r) => extLink(r.page, v, { class: 'name' }) },
+          { key: 'tvl', label: 'TVL', num: true, fmt: (v) => usd(v), termKey: 'tvl' },
+          { key: 'change7d', label: '7d', num: true, fmt: (v) => h('span', { class: `delta ${v > 0 ? 'up' : v < 0 ? 'down' : 'flat'}` }, pct(v)), termKey: 'change7d' },
+          { key: 'fees30d', label: 'Fees (30d)', num: true, fmt: (v) => usd(v), termKey: 'fees' },
+          { key: 'chains', label: 'Chains', wrap: true },
+        ],
+        rows: PP,
+        csvExtra: [{ label: 'DefiLlama page', get: (r) => r.page }],
+      })
+      : unavailable('Prediction-market protocols unavailable', PS['dl-protocols']?.error || predFile.error || 'DefiLlama lists no protocols with TVL in its Prediction Market category this run.'),
+    sourceLine([PS['dl-protocols'], PS['dl-fees']].filter(Boolean))));
 
   // feed status
   root.append(h('section', { class: 'card', style: { marginTop: '24px' } },

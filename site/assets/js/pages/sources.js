@@ -6,10 +6,11 @@ import { dateTime, relative } from '../format.js';
 
 const API_DOCS = [
   ['DefiLlama', 'TVL, fees, revenue, DEX volume, stablecoins, yields, hacks, chains', 'https://api-docs.defillama.com/'],
-  ['CoinGecko', 'Token price, market cap, FDV, volume, supply (keyless public API)', 'https://docs.coingecko.com/docs/keyless-public-api'],
+  ['CoinGecko', 'Token price, market cap, FDV, volume, supply, and the market-wide coin list (keyless public API)', 'https://docs.coingecko.com/docs/keyless-public-api'],
   ['DexScreener', 'DEX pairs and liquidity', 'https://docs.dexscreener.com/api/reference'],
   ['GeckoTerminal', 'DEX pools (fallback)', 'https://apiguide.geckoterminal.com/'],
   ['Snapshot', 'Governance proposals (GraphQL hub)', 'https://docs.snapshot.box/'],
+  ['Polymarket', 'Crypto prediction markets: outcome prices, volume, liquidity (Gamma API, keyless)', 'https://docs.polymarket.com/'],
   ['RSS feeds', 'News sites, protocol blogs (Medium) and governance forums (Discourse)', null],
 ];
 
