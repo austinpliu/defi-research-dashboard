@@ -16,7 +16,7 @@ _Updated as work happens. Last update: 5 Nov 2026 (follow-up session: more coins
 
 ## Not done / known gaps
 - **Deploy:** GitHub Pages needs the repository owner to merge this branch into `main` and switch Settings → Pages → Source to "GitHub Actions" (see README › How to deploy). The publish workflow is ready but can't be switched on from here. The 6-hour schedule also starts only once the workflow is on `main`.
-- **Token unlocks:** no free, keyless source (DefiLlama's is Pro-only). Shown as "unavailable".
+- **Token unlocks (follow-up item 2, skipped):** checked again in Nov 2026 and there is still no free, keyless source. DefiLlama's is paid-only (HTTP 402), and DropsTab, Magna, Tokenomist and an oanor.com wrapper all need a key or offer only a website. Shown as "unavailable"; details in DECISIONS.md.
 - **Funding rounds list:** DefiLlama's `/raises` is Pro-only. Protocol pages show the rounds in each protocol's free profile instead.
 - **On-chain governance** (Sky, Compound and Aave executive votes): no keyless API. Snapshot plus governance-forum feeds only.
 - **Perps volume** (Hyperliquid): Pro-only on DefiLlama.
