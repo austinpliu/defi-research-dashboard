@@ -330,7 +330,7 @@ export function timelineChart({ items, lanes, typeMeta, from, to, onOpen }) {
         itemStyle: { color: t.s[typeMeta[ty].slot % 8], borderColor: t.surface, borderWidth: 2, opacity: 0.95 },
         emphasis: { scale: 1.4 },
         data: items.filter((it) => it.type === ty).map((it) => ({ value: [Date.parse(it.date), it.lane], item: it })),
-        markLine: i === 0 ? { silent: true, symbol: 'none', lineStyle: { color: t.ink, width: 1.5, type: 'solid' }, label: { formatter: 'Today', color: t.ink, fontWeight: 700, position: 'end' }, data: [{ xAxis: Date.now() }] } : undefined,
+        markLine: i === 0 ? { silent: true, symbol: 'none', lineStyle: { color: t.ink, width: 1.5, type: 'solid' }, label: { formatter: 'Today', color: t.ink, fontWeight: 700, position: 'start', distance: 6 }, data: [{ xAxis: Date.now() }] } : undefined,
       })),
     };
   };

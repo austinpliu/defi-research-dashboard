@@ -15,7 +15,7 @@ export const TYPES = {
   'launch-upgrade': { label: 'Launch / upgrade', symbol: 'triangle', slot: 2 },
   scheduled: { label: 'Scheduled (DefiLlama)', symbol: 'pin', slot: 3, term: 'hallmark' },
   'governance-forum': { label: 'Forum post', symbol: 'rect', slot: 4, term: 'forum' },
-  blog: { label: 'Protocol blog', symbol: 'roundRect', slot: 5 },
+  blog: { label: 'Protocol blog', symbol: 'roundRect', slot: 7 },
   news: { label: 'News', symbol: 'emptyCircle', slot: 6 },
 };
 
