@@ -34,7 +34,7 @@ Light and dark mode follow your system; the moon/sun button switches them. It wo
 
 Many data sites refuse requests that come straight from a web browser, and a public website can't safely hold API keys. So the work is split in two:
 
-1. **A robot fetches the data.** A GitHub Action (a free scheduled job that GitHub runs for you) runs `scripts/fetch-data.mjs` every 6 hours. You can also run it any time with the **Run workflow** button, and it runs by itself whenever you change `watchlist.json`. The script calls only free, keyless public APIs, spaces out its requests to stay inside their rate limits, and saves everything as JSON files in `site/data/`. For each dataset it records the exact endpoint, a page you can check by hand, and the fetch time.
+1. **A robot fetches the data.** A GitHub Action (a free scheduled job that GitHub runs for you) runs `scripts/fetch-data.mjs` every 6 hours. You can also run it any time with the **Run workflow** button, and it runs by itself whenever you change `watchlist.json`. (GitHub only runs the schedule and shows the button once the code is on the `main` branch.) The script calls only free, keyless public APIs, spaces out its requests to stay inside their rate limits, and saves everything as JSON files in `site/data/`. For each dataset it records the exact endpoint, a page you can check by hand, and the fetch time.
 2. **The website just reads those files.** `site/` is a plain static website (HTML, CSS and JavaScript, no build step). It has no server, no database and no keys, so GitHub Pages can host it for free.
 
 If a source fails, its section on the site says "unavailable" with the reason. If the same data was fetched successfully within the last 48 hours, the site shows that earlier copy instead, clearly marked **STALE** with its original fetch time. After 48 hours it switches to "unavailable".
@@ -49,7 +49,7 @@ The script also opens every source link and records whether it works (`site/data
 | [CoinGecko](https://docs.coingecko.com/docs/keyless-public-api) | Token price, market cap, FDV, volume, supply, contract addresses | No (keyless public API) |
 | [DexScreener](https://docs.dexscreener.com/api/reference) | DEX pairs and liquidity | No |
 | [GeckoTerminal](https://apiguide.geckoterminal.com/) | DEX pools (when DexScreener doesn't cover a chain) | No |
-| [Snapshot](https://docs.snapshot.box/tools/api) | Governance proposals and votes | No |
+| [Snapshot](https://docs.snapshot.box/) | Governance proposals and votes | No |
 | RSS feeds | News (CoinDesk, The Block, Decrypt, Cointelegraph, Blockworks, DL News, The Defiant), protocol blogs (Medium) and governance forums (Discourse) | No |
 
 What isn't available for free (shown as "unavailable" on the site): **token unlock schedules** and DefiLlama's global **raises list** are on DefiLlama's paid Pro API, and no other keyless source exists. **Perpetuals trading volume** is Pro-only too. L2BEAT has no documented public API, so it isn't used. See `DECISIONS.md` for the details.
