@@ -158,7 +158,9 @@ function oneSource(p, s, sources, compact) {
   }
   const when = s.stale ? s.stale.lastGoodAt : s.fetchedAt;
   if (when) {
-    const t = h('time', { datetime: when, title: `${dateTime(when)} (${relative(when)})` }, compact ? `${dateTime(when).split(', ')[1]}` : dateTime(when));
+    // compact form drops the date only when it's today (UTC), so old data is never ambiguous
+    const sameDay = new Date(when).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10);
+    const t = h('time', { datetime: when, title: `${dateTime(when)} (${relative(when)})` }, compact && sameDay ? `${dateTime(when).split(', ')[1]}` : dateTime(when));
     append(p, [h('span', { class: 'sep' }, '·'), compact ? '' : 'fetched ', t, compact ? '' : ` (${relative(when)})`]);
   }
   if (s.stale) append(p, [`. Latest attempt failed: ${s.stale.reason}`]);
