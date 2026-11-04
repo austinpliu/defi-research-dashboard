@@ -1,0 +1,41 @@
+# Opens every page of the site in a real browser (desktop and phone sizes) and
+# fails if a page throws an error, draws nothing, or scrolls sideways on a phone.
+name: Site check
+
+on:
+  push:
+    paths:
+      - 'site/**'
+      - '!site/data/**'
+      - 'tests/**'
+      - '.github/workflows/site-check.yml'
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Unit tests
+        run: node --test 'tests/*.test.mjs'
+
+      - name: Install a headless browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Open every page
+        run: |
+          python3 -m http.server 8765 --directory site > /dev/null 2>&1 &
+          sleep 1
+          node tests/browser/smoke.mjs
