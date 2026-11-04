@@ -44,8 +44,9 @@ export class Http {
    * tripAfter: after this many requests to one host in a row end in HTTP 429
    * (even after retries), further requests to that host are skipped this run.
    */
-  constructor({ verbose = true, budgetMs = Infinity, tripAfter = 3 } = {}) {
+  constructor({ verbose = true, budgetMs = Infinity, tripAfter = 3, hostDefaults = {} } = {}) {
     this.requests = [];
+    this.hostDefaults = hostDefaults; // pacing for hosts without their own configureHost()
     this.gates = new Map();
     this.verbose = verbose;
     this.deadline = Date.now() + budgetMs;
@@ -69,7 +70,7 @@ export class Http {
   }
 
   gateFor(host) {
-    if (!this.gates.has(host)) this.gates.set(host, new HostGate());
+    if (!this.gates.has(host)) this.configureHost(host, this.hostDefaults);
     return this.gates.get(host);
   }
 

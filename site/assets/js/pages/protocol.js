@@ -42,13 +42,14 @@ export async function render(root, { params }) {
     ['Website', L.website], ['Docs', L.docs], ['X / Twitter', L.twitter], ['GitHub', L.github],
     ...(L.audits || []).slice(0, 3).map((u, i) => [`Audit ${i + 1}`, u]),
     ['DefiLlama', L.defillama], d.token?.id ? ['CoinGecko', `https://www.coingecko.com/en/coins/${d.token.id}`] : null,
-    ...(d.governance?.spaces || []).map((s) => [`Snapshot: ${s}`, `https://snapshot.org/#/${s}`]),
+    // only spaces Snapshot confirmed exist (a missing one would open an empty page)
+    ...(d.governance?.spaces || []).filter((s) => d.governance?.spaceInfo?.[s] !== null).map((s) => [`Snapshot: ${s}`, `https://snapshot.org/#/${s}`]),
   ].filter((x) => x && x[1]);
   const profile = h('section', { class: 'card' },
     h('div', { class: 'p-head' },
       a.logo ? h('img', { class: 'p-logo', src: a.logo, alt: `${name} logo`, width: 56, height: 56, onerror: (e) => e.target.replaceWith(h('div', { class: 'p-logo' })) }) : h('div', { class: 'p-logo' }),
       h('div', {}, h('h2', { class: 'p-name' }, name), h('div', { class: 'chips', style: { marginTop: '8px' } },
-        a.category ? h('span', { class: 'chip solid' }, a.category) : null,
+        a.category ? h('span', { class: 'chip solid', title: a.categoryNote || 'Category as listed on DefiLlama' }, a.category) : null,
         (a.chains || []).slice(0, 8).map((c) => h('span', { class: 'chip' }, c)),
         (a.chains || []).length > 8 ? h('span', { class: 'chip' }, `+${a.chains.length - 8} more`) : null))),
     a.description ? h('p', { class: 'p-desc' }, a.description) : unavailable('No description', a.unavailable || 'DefiLlama has no description for this protocol.'),
@@ -250,7 +251,11 @@ export async function render(root, { params }) {
     kicker: 'Yields',
     take: yieldTakeaway(name, Y.list),
     fallback: `Top yield pools on ${name}`,
-    title: Y.list?.length ? `Largest ${Y.list.length} pools by deposits (DefiLlama project ids: ${(Y.projects || []).join(', ')})` : null,
+    title: Y.list?.length
+      ? Y.zeroApyPools && Y.list.some((p) => p.apy > 0)
+        ? `Largest pools that pay yield, by deposits. ${Y.zeroApyPools} more pay 0% (usually collateral-only) and come last. DefiLlama project ids: ${(Y.projects || []).join(', ')}`
+        : `Largest ${Y.list.length} pools by deposits (DefiLlama project ids: ${(Y.projects || []).join(', ')})`
+      : null,
     body: Y.list?.length
       ? dataTable({
         caption: `${name} yield pools`, csvName: `${slug}-yield-pools`, sortKey: 'tvl', pageSize: 12, filters: [{ key: 'chain', label: 'Chain' }],

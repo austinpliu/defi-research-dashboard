@@ -170,6 +170,7 @@ async function main() {
   // 2. One file per protocol -----------------------------------------------
   console.log('\n== Protocols');
   const protocolList = raw.protocols.ok ? raw.protocols.data : null;
+  const fees30dById = new Map((raw.fees.ok ? raw.fees.data.protocols || [] : []).map((p) => [String(p.defillamaId ?? p.id), num(p.total30d)]));
   const yieldsSrc = sourceRecord({ name: 'DefiLlama', label: 'Yield pools', page: `${DL.site}/yields`, res: raw.pools });
   const hacksSrc = sourceRecord({ name: 'DefiLlama', label: 'Hacks database', page: `${DL.site}/hacks`, res: raw.hacks, note: raw.hacks.ok ? undefined : 'DefiLlama lists /hacks as a Pro (paid) endpoint; the free host refused it.' });
 
@@ -217,9 +218,18 @@ async function main() {
     if (core.about && protocolList) {
       const kids = kidsAll;
       if (!core.about.category && kids.length) {  // kids === kidsAll
+        // Weight each sub-protocol by its 30-day fees (what the business earns from), falling
+        // back to TVL when DefiLlama has no fees for any of them. By TVL alone Hyperliquid
+        // would be a "Bridge", because the deposits behind its exchange sit in its bridge.
+        const fee = (k) => fees30dById.get(String(k.id)) || 0;
+        const byFees = kids.some((k) => fee(k) > 0);
         const counts = {};
-        for (const k of kids) if (k.category) counts[k.category] = (counts[k.category] || 0) + (k.tvl || 0) + 1;
-        core.about.category = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+        for (const k of kids) if (k.category) counts[k.category] = (counts[k.category] || 0) + (byFees ? fee(k) : k.tvl || 0) + 1;
+        const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([c]) => c);
+        core.about.category = ranked[0] || null;
+        if (ranked.length) {
+          core.about.categoryNote = `${entry.name} has no category of its own on DefiLlama, so this is the category of the sub-protocols with the most ${byFees ? 'fees over 30 days' : 'TVL'}.${ranked.length > 1 ? ` Its sub-protocols also cover: ${ranked.slice(1).join(', ')}.` : ''}`;
+        }
       }
       if (!core.about.chains?.length) {
         const set = new Set(kids.flatMap((k) => k.chains || []));
@@ -252,7 +262,8 @@ async function main() {
     for (const k of kidsAll) slugs.add(k.slug);
     const pools = poolsForProtocol(raw.pools, slugs);
     doc.sources['dl-yields'] = yieldsSrc;
-    doc.yields = pools ? { list: pools, projects: [...slugs], src: 'dl-yields' } : { unavailable: raw.pools.error, src: 'dl-yields' };
+    const zeroApyPools = pools ? raw.pools.data.data.filter((p) => slugs.has(p.project) && !((Number(p.apy) || 0) > 0)).length : 0;
+    doc.yields = pools ? { list: pools, projects: [...slugs], zeroApyPools, src: 'dl-yields' } : { unavailable: raw.pools.error, src: 'dl-yields' };
 
     // hacks / incidents
     const names = [entry.name, core.about?.name, ...(core.about?.otherProtocols || [])].filter(Boolean);
@@ -361,7 +372,11 @@ async function main() {
   if (gov.source && !gov.source.ok) problem('warn', `Snapshot query failed (${gov.source.error})`);
   if (gov.source?.ok && gov.spaceInfo && Object.keys(gov.spaceInfo).length) {
     for (const s of allSpaces) {
-      if (!gov.spaceInfo[s]) problem('warn', `Snapshot space "${s}" (${spaceOwner.get(s)?.entry.name}) was not found on Snapshot`, `Find the protocol's space on snapshot.org and list its id under "snapshot" in watchlist.json (or remove it)`);
+      if (gov.spaceInfo[s]) continue;
+      const owner = spaceOwner.get(s);
+      const found = (owner?.spaces || []).filter((x) => gov.spaceInfo[x]);
+      if (found.length) problem('info', `Snapshot has no space "${s}" (listed for ${owner.entry.name} by DefiLlama, CoinGecko or watchlist.json), so ${owner.entry.name}'s votes come from ${found.join(', ')}`);
+      else problem('warn', `Snapshot space "${s}" (${owner?.entry.name}) was not found on Snapshot`, `Find the protocol's space on snapshot.org and list its id under "snapshot" in watchlist.json (or remove it)`);
     }
   }
   for (const p of protocols) {

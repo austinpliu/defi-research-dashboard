@@ -605,9 +605,12 @@ function summarizeFees(res, src) {
 
 export function poolsForProtocol(poolsRes, slugs, limit = 12) {
   if (!poolsRes.ok || !Array.isArray(poolsRes.data?.data)) return null;
+  // Pools paying 0% are usually collateral-only (e.g. Compound V3's WBTC), so pools that pay
+  // yield come first, each group largest first. Zero-yield pools fill in only if needed.
+  const pays = (p) => ((Number(p.apy) || 0) > 0 ? 1 : 0);
   return poolsRes.data.data
     .filter((p) => slugs.has(p.project))
-    .sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0))
+    .sort((a, b) => pays(b) - pays(a) || (b.tvlUsd || 0) - (a.tvlUsd || 0))
     .slice(0, limit)
     .map((p) => ({
       pool: p.pool,

@@ -60,10 +60,23 @@ export function openExternal(u) {
   if (url) window.open(url, '_blank', 'noopener');
 }
 
+// Links that failed the last automatic link check (site/data/broken-links.json).
+let BROKEN = new Map();
+let BROKEN_AT = null;
+export function setBrokenLinks(data) {
+  BROKEN = new Map((data?.links || []).map((l) => [l.url, l]));
+  BROKEN_AT = data?.checkedAt || null;
+}
+
 export function extLink(href, text, attrs = {}) {
   const url = safeUrl(href);
   if (!url) return text ? h('span', {}, text) : null;
-  return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', ...attrs }, text);
+  const bad = BROKEN.get(url);
+  if (!bad) return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', ...attrs }, text);
+  const when = BROKEN_AT ? new Date(BROKEN_AT).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'the last check';
+  return h('span', { class: 'link-broken-wrap' },
+    h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', ...attrs, class: `${attrs.class || ''} link-broken`.trim(), title: `This link didn't open when it was checked on ${when}${bad.status ? ` (HTTP ${bad.status})` : ''}.` }, text),
+    h('span', { class: 'link-flag' }, ` (didn’t open on ${when})`));
 }
 
 // ---------- Glossary tooltips ----------

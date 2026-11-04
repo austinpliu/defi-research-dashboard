@@ -14,7 +14,7 @@ import { stripHtml } from './lib/util.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.env.DATA_OUT_DIR || join(ROOT, 'site', 'data');
-const MAX_LINKS = Number(process.env.MAX_LINKS || 600);
+const MAX_LINKS = Number(process.env.MAX_LINKS || 1500);
 
 // Sites that refuse automated checks; we list them as "not checked automatically".
 const SKIP_HOSTS = [/(^|\.)x\.com$/, /(^|\.)twitter\.com$/, /(^|\.)t\.me$/, /(^|\.)discord\.(gg|com)$/, /(^|\.)linkedin\.com$/];
@@ -73,11 +73,17 @@ async function main() {
   // API endpoints were already fetched by fetch-data.mjs; reuse those results.
   const meta = readJSON(join(OUT, 'meta.json'));
   const fetched = new Map((meta?.requests || []).map((r) => [r.url, r]));
-  const http = new Http({ verbose: false, budgetMs: Number(process.env.LINK_BUDGET_MIN || 12) * 60e3 });
+  // one request per second per site unless configured below; several sites run in parallel
+  const http = new Http({ verbose: false, budgetMs: Number(process.env.LINK_BUDGET_MIN || 12) * 60e3, hostDefaults: { minIntervalMs: 1000, concurrency: 1 } });
   const list = [...urls.entries()].slice(0, MAX_LINKS);
   const results = [];
   let i = 0;
-  const workers = Array.from({ length: 6 }, async () => {
+  // be gentle with each host
+  for (const h of ['defillama.com', 'www.coingecko.com', 'www.geckoterminal.com', 'dexscreener.com', 'snapshot.org']) http.configureHost(h, { minIntervalMs: 800, concurrency: 2 });
+  http.configureHost('api.coingecko.com', { minIntervalMs: 7000, concurrency: 1 });
+  http.configureHost('api.geckoterminal.com', { minIntervalMs: 2500, concurrency: 1 });
+  http.configureHost('yields.llama.fi', { minIntervalMs: 1500, concurrency: 1 });
+  const workers = Array.from({ length: 8 }, async () => {
     while (i < list.length) {
       const [url, where] = list[i++];
       const host = new URL(url).host;
@@ -87,7 +93,15 @@ async function main() {
       }
       if (fetched.has(url)) {
         const f = fetched.get(url);
-        results.push({ url, where: [...where].slice(0, 5), ok: f.ok, status: f.status, kind: 'api', error: f.ok ? undefined : f.error, checkedAt: f.fetchedAt, note: 'Checked during the data fetch' });
+        // A request that failed during the fetch is the reason the site shows "unavailable"
+        // there (e.g. a paid-only endpoint). The link is right; it shows the failure.
+        const expected = !f.ok && f.status >= 400 && f.status < 500 && f.status !== 429;
+        results.push({
+          url, where: [...where].slice(0, 5), ok: f.ok ? true : expected ? null : false, status: f.status, kind: 'api',
+          error: f.ok ? undefined : f.error, checkedAt: f.fetchedAt,
+          note: f.ok ? 'Checked during the data fetch' : expected ? `Failed during the data fetch (${f.status}), which is why the site shows "unavailable" here` : 'Checked during the data fetch',
+          ...(expected ? { expected: true } : {}),
+        });
         continue;
       }
       if (url.includes('hub.snapshot.org/graphql')) {
@@ -98,8 +112,12 @@ async function main() {
       // Bot protection (e.g. Cloudflare's "Just a moment...") or rate limits mean
       // "couldn't check automatically", not "broken".
       const bodyStart = String(r.data || r.error || '').slice(0, 3000);
-      if (!r.ok && (r.status === 0 || r.status === 429 || ((r.status === 403 || r.status === 503) && /just a moment|cf-chl|cloudflare|attention required|captcha|access denied|<!DOCTYPE html/i.test(bodyStart)))) {
-        const note = r.status === 0 ? `Couldn't connect during the check (${r.error}) — open by hand` : r.status === 429 ? 'Rate-limited during the check — open by hand' : 'Site blocks automated checks (bot protection) — open by hand';
+      const busy = r.status === 502 || r.status === 503 || r.status === 504;
+      if (!r.ok && (r.status === 0 || r.status === 429 || busy || (r.status === 403 && /just a moment|cf-chl|cloudflare|attention required|captcha|access denied|<!DOCTYPE html/i.test(bodyStart)))) {
+        const note = r.status === 0 ? `Couldn't connect during the check (${r.error}) — open by hand`
+          : r.status === 429 ? 'Rate-limited during the check — open by hand'
+          : busy && !/just a moment|cf-chl|cloudflare|captcha/i.test(bodyStart) ? `The site was overloaded or down during the check (HTTP ${r.status}) — open by hand`
+          : 'Site blocks automated checks (bot protection) — open by hand';
         results.push({ url, where: [...where].slice(0, 5), ok: null, status: r.status, note, checkedAt: r.fetchedAt });
         process.stdout.write('~');
         continue;
@@ -120,10 +138,6 @@ async function main() {
       process.stdout.write(r.ok ? '.' : 'x');
     }
   });
-  // be gentle with each host
-  for (const h of ['defillama.com', 'www.coingecko.com', 'www.geckoterminal.com', 'dexscreener.com', 'snapshot.org']) http.configureHost(h, { minIntervalMs: 800, concurrency: 2 });
-  http.configureHost('api.coingecko.com', { minIntervalMs: 7000, concurrency: 1 });
-  http.configureHost('api.geckoterminal.com', { minIntervalMs: 2500, concurrency: 1 });
   await Promise.all(workers);
   results.sort((a, b) => (a.ok === b.ok ? a.url.localeCompare(b.url) : a.ok === false ? -1 : 1));
   const summary = {
@@ -131,10 +145,14 @@ async function main() {
     total: results.length,
     ok: results.filter((r) => r.ok === true).length,
     broken: results.filter((r) => r.ok === false).length,
-    skipped: results.filter((r) => r.ok === null).length,
+    skipped: results.filter((r) => r.ok === null && !r.expected).length,
+    expected: results.filter((r) => r.expected).length,
     truncated: urls.size > MAX_LINKS ? urls.size - MAX_LINKS : 0,
   };
   writeFileSync(join(OUT, 'link-check.json'), `${JSON.stringify({ ...summary, results }, null, 1)}\n`);
+  // a small file the site loads on every page, so a link that failed the check is marked where it appears
+  const broken = results.filter((r) => r.ok === false).map((r) => ({ url: r.url, status: r.status || null }));
+  writeFileSync(join(OUT, 'broken-links.json'), `${JSON.stringify({ checkedAt: summary.checkedAt, links: broken }, null, 1)}\n`);
   console.log(`\nLink check: ${summary.ok} ok, ${summary.broken} broken, ${summary.skipped} not checked (of ${summary.total}).`);
   for (const r of results.filter((x) => x.ok === false)) console.log(`  ✗ ${r.status || '---'} ${r.url}  (${r.error})  in ${r.where.join(', ')}`);
 }

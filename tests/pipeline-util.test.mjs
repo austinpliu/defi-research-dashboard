@@ -5,7 +5,7 @@ import {
   sumLastDays, trimDays, firstSentences, mentions, stripHtml, DAY,
 } from '../scripts/lib/util.mjs';
 import { parseFeed } from '../scripts/lib/rss.mjs';
-import { prettyParentName, groupOverview, isChainKey } from '../scripts/lib/defillama.mjs';
+import { prettyParentName, groupOverview, isChainKey, poolsForProtocol } from '../scripts/lib/defillama.mjs';
 import { spacesFromSources, mainQuery, latestQuery } from '../scripts/lib/governance.mjs';
 import { carryForward } from '../scripts/lib/sources.mjs';
 import { classify } from '../scripts/lib/feeds.mjs';
@@ -143,4 +143,14 @@ test('classify labels launches and upgrades by keyword', () => {
   assert.equal(classify('Aave V4 goes live on mainnet', 'news'), 'launch-upgrade');
   assert.equal(classify('Weekly market wrap', 'news'), 'news');
   assert.equal(classify('[ARFC] Risk parameter update', 'governance-forum'), 'governance-forum');
+});
+
+test('poolsForProtocol lists pools that pay yield before zero-yield collateral pools', () => {
+  const res = { ok: true, data: { data: [
+    { pool: 'a', project: 'x', tvlUsd: 100, apy: 0 },
+    { pool: 'b', project: 'x', tvlUsd: 10, apy: 3 },
+    { pool: 'c', project: 'y', tvlUsd: 1000, apy: 5 },
+    { pool: 'd', project: 'x', tvlUsd: 50, apy: null },
+  ] } };
+  assert.deepEqual(poolsForProtocol(res, new Set(['x'])).map((p) => p.pool), ['b', 'a', 'd']);
 });

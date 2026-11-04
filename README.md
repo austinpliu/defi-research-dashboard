@@ -39,7 +39,7 @@ Many data sites refuse requests that come straight from a web browser, and a pub
 
 If a source fails, its section on the site says "unavailable" with the reason. If the same data was fetched successfully within the last 48 hours, the site shows that earlier copy instead, clearly marked **STALE** with its original fetch time. After 48 hours it switches to "unavailable".
 
-The script also opens every source link and records whether it works (`site/data/link-check.json`, shown on the Sources page).
+The script also opens every source link and records whether it works (`site/data/link-check.json`, shown on the Sources page). A link that didn't open is marked "didn't open" wherever it appears on the site.
 
 ### Data sources
 

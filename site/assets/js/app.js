@@ -1,5 +1,5 @@
 // App shell: header, ticker, search, theme, freshness, and a hash router.
-import { h, append, svgIcon, initTooltips, pageError } from './ui.js';
+import { h, append, svgIcon, initTooltips, pageError, setBrokenLinks } from './ui.js';
 import { loadSafe } from './data.js';
 import { disposeAll, rethemeAll } from './charts.js';
 import { mountPending, clearPending } from './cards.js';
@@ -210,7 +210,10 @@ function init() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (!document.documentElement.dataset.theme) { syncThemeButton(); rethemeAll(); }
   });
-  route();
+  // mark links that failed the last link check; never hold the page up for more than a moment
+  Promise.race([loadSafe('broken-links.json'), new Promise((r) => setTimeout(r, 700))])
+    .then((res) => { if (res?.data) setBrokenLinks(res.data); })
+    .finally(route);
   const yr = document.getElementById('footer-meta');
   if (yr) loadSafe('meta.json').then(({ data }) => { if (data) append(yr, [`Data fetched ${dateTime(data.generatedAt)} by `, data.run?.url ? h('a', { href: data.run.url, target: '_blank', rel: 'noopener' }, 'this GitHub Actions run') : 'a local run', '.']); });
 }

@@ -76,11 +76,11 @@ export async function render(root) {
 
   // link check
   if (links) {
-    const rows = links.results.map((r) => ({ ...r, state: r.ok === true ? 'opens' : r.ok === false ? 'broken' : 'check by hand', host: new URL(r.url).host, whereText: (r.where || []).join(', ') }));
+    const rows = links.results.map((r) => ({ ...r, state: r.ok === true ? 'opens' : r.ok === false ? 'broken' : r.expected ? 'failed in fetch' : 'check by hand', host: new URL(r.url).host, whereText: (r.where || []).join(', ') }));
     grid.append(h('section', { class: 'card span-12' },
       h('div', { class: 'kicker' }, 'Link check'),
-      h('h3', { class: 'takeaway' }, `${links.ok} of ${links.total} source links opened automatically; ${links.broken} broken, ${links.skipped} need a manual check`),
-      h('p', { class: 'chart-note' }, `Checked ${dateTime(links.checkedAt)}. For web pages the page title is shown, so you can confirm each link lands on the right protocol or token. Sites with bot protection (DefiLlama, CoinGecko, DexScreener and others sometimes) can’t be checked automatically.`),
+      h('h3', { class: 'takeaway' }, `${links.ok} of ${links.total} source links opened automatically; ${links.broken} broken`),
+      h('p', { class: 'chart-note' }, `Checked ${dateTime(links.checkedAt)}. ${links.skipped} couldn’t be checked automatically (bot protection, rate limits or a busy server), so open those by hand.${links.expected ? ` ${links.expected} are requests that failed during the data fetch, which is why the site shows “unavailable” in those places.` : ''} Broken links are also marked “didn’t open” wherever they appear on the site. For web pages the page title is shown, so you can confirm each link lands on the right protocol or token.`),
       dataTable({
         caption: 'Link check', csvName: 'link-check', sortKey: 'state', sortDir: 'asc', pageSize: 40,
         filters: [{ key: 'state', label: 'Result', plural: 'results' }, { key: 'host', label: 'Host' }],
