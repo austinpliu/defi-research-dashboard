@@ -110,7 +110,7 @@ Everything the dashboard tracks is in one file, **`watchlist.json`**. You can ed
 
 1. Find the protocol on [DefiLlama](https://defillama.com). Its address looks like `https://defillama.com/protocol/morpho`. The last part (`morpho`) is its **DefiLlama slug**.
 2. Optional: find its token on [CoinGecko](https://www.coingecko.com). The address looks like `https://www.coingecko.com/en/coins/morpho`. The last part is the **CoinGecko id**. If you leave it out, the script uses the id DefiLlama knows about.
-3. Add an entry to the `"protocols"` list in `watchlist.json` (mind the commas between entries):
+3. Add an entry to the `"protocols"` list in `watchlist.json` (mind the commas between entries). An example (the docs and forum addresses are illustrative; copy the real ones from the protocol's website):
 
    ```json
    {
@@ -138,7 +138,7 @@ Everything the dashboard tracks is in one file, **`watchlist.json`**. You can ed
 
 4. To remove a protocol, delete its entry. Its page disappears on the next update.
 
-The `"peers"` list works the same way. Peers get full pages and appear in Compare, but not in your watchlist strip or Catalysts. The `"newsFeeds"` list holds the news sites' RSS feeds.
+The `"peers"` list works the same way. Peers get full pages and appear in Compare and Catalysts (tagged "peer"), but not in your watchlist strip. The `"newsFeeds"` list holds the news sites' RSS feeds.
 
 If something is wrong (a slug or id DefiLlama or CoinGecko doesn't recognise, a feed that doesn't load), the **Sources** page lists it under "Problems this run", usually with the fix. For example, it suggests the right CoinGecko id from CoinGecko's own search.
 
