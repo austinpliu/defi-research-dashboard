@@ -1,18 +1,6 @@
 {
- "checkedAt": "2026-11-04T10:39:30.294Z",
+ "checkedAt": "2026-11-04T10:53:07.775Z",
  "links": [
-  {
-   "url": "https://api.geckoterminal.com/api/v2/networks/berachain/tokens/0xff9c599d51c407a45d631c6e89cb047efb88aef6/pools?include=dex&page=1",
-   "status": 429
-  },
-  {
-   "url": "https://api.geckoterminal.com/api/v2/networks/katana/tokens/0x1e5efca3d0db2c6d5c67a4491845c43253eb9e4e/pools?include=dex&page=1",
-   "status": 429
-  },
-  {
-   "url": "https://api.geckoterminal.com/api/v2/networks/near/tokens/c00e94cb662c3520282e6f5717214004a7f26888.factory.bridge.near/pools?include=dex&page=1",
-   "status": 429
-  },
   {
    "url": "https://defillama.com/yields/pool/bd335b46-3daf-4507-adb2-6fd4337ea33b",
    "status": 404
