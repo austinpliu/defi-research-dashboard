@@ -44,6 +44,7 @@ export function feedItems({ items, feed, srcKey, protocols, maxAgeDays = 30, own
   const out = [];
   for (const it of items) {
     if (!it.date || Date.parse(it.date) < cutoff) continue;
+    if (!/^https?:\/\//i.test(it.link || '')) continue; // never pass on javascript: or other odd links
     const text = `${it.title} ${it.summary || ''}`;
     let matched = protocols.filter((p) => mentions(text, p.keywords?.length ? p.keywords : [p.name]));
     if (ownerSlug) {

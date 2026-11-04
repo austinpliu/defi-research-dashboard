@@ -1,6 +1,6 @@
 // 05 — Catalysts: votes, unlocks, launches/upgrades, forum posts, news.
 // Information, not predictions.
-import { h, band, sourceLine, extLink, pageError, unavailable, term } from '../ui.js';
+import { h, openExternal, band, sourceLine, extLink, pageError, unavailable, term } from '../ui.js';
 import { chartCard } from '../cards.js';
 import { loadSafe } from '../data.js';
 import { timelineChart, themeOf } from '../charts.js';
@@ -100,7 +100,7 @@ export async function render(root, { query }) {
     const srcs = [...new Set(items.map((i) => i.src))].map((k) => S[k]).filter(Boolean).slice(0, 6);
     const table = () => ({ columns: [{ key: 'date', label: 'Date', fmt: (v) => dateTime(v) }, { key: 'type', label: 'Type', fmt: (v) => TYPES[v]?.label || v }, { key: 'symbols', label: 'Tokens', fmt: (v) => (v || []).join(', ') }, { key: 'title', label: 'Title', wrap: true, fmt: (v, row) => extLink(row.url, v) }, { key: 'sourceName', label: 'Source' }, { key: 'url', label: 'Link', csv: (row) => row.url, fmt: (v) => extLink(v, 'open') }], rows: items });
     if (!card || !card.isConnected) {
-      card = chartCard({ kicker: 'Timeline', take, fallback: 'Catalyst timeline', title: `${items.length} items · ${r.label.toLowerCase()} · each row is a token`, size: lanes.length > 6 ? 'tall' : '', build, legend: [], src: srcs, sources: S, csvName: 'catalysts', table, onClick: (p) => { if (p.data?.item?.url) window.open(p.data.item.url, '_blank', 'noopener'); } });
+      card = chartCard({ kicker: 'Timeline', take, fallback: 'Catalyst timeline', title: `${items.length} items · ${r.label.toLowerCase()} · each row is a token`, size: lanes.length > 6 ? 'tall' : '', build, legend: [], src: srcs, sources: S, csvName: 'catalysts', table, onClick: (p) => { if (p.data?.item?.url) openExternal(p.data.item.url); } });
       timelineHolder.replaceChildren(card);
       import('../cards.js').then(({ mountPending }) => { mountPending(); card.update({ legend: legend() }); });
     } else {

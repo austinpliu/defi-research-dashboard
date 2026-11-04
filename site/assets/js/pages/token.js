@@ -1,5 +1,5 @@
 // 03 — One token
-import { h, band, statTile, sourceLine, subhead, segmented, extLink, pageError, term, unavailable, svgIcon } from '../ui.js';
+import { h, openExternal, band, statTile, sourceLine, subhead, segmented, extLink, pageError, term, unavailable, svgIcon } from '../ui.js';
 import { chartCard, infoCard } from '../cards.js';
 import { loadMany } from '../data.js';
 import { lineChart, hbarChart, columnChart } from '../charts.js';
@@ -135,7 +135,7 @@ export async function render(root, { params }) {
     fallback: `${sym} contracts and links`,
     body: [
       plats.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'data' }, h('thead', {}, h('tr', {}, h('th', {}, 'Chain (CoinGecko id)'), h('th', {}, 'Contract address'))), h('tbody', {}, plats.map(([p, addr]) => h('tr', {}, h('td', {}, p), h('td', { style: { fontFamily: 'ui-monospace, monospace', fontSize: '12px' } }, addr)))))) : h('p', { class: 'muted' }, 'CoinGecko lists no contract addresses (the token may be native to its own chain).'),
-      h('div', { class: 'links' }, [['Website', pr.links?.homepage], ['Whitepaper / docs', pr.links?.whitepaper], ['X / Twitter', pr.links?.twitter], ['Forum', /forum|gov|discourse|commonwealth/i.test(pr.links?.forum || '') ? pr.links.forum : null], ['Snapshot', pr.links?.snapshot], ...(pr.links?.explorers || []).slice(0, 2).map((u, i) => [`Explorer ${i + 1}`, u])].filter((x) => x[1]).map(([l, u]) => h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, l, svgIcon('ext')))),
+      h('div', { class: 'links' }, [['Website', pr.links?.homepage], ['Whitepaper / docs', pr.links?.whitepaper], ['X / Twitter', pr.links?.twitter], ['Forum', /forum|gov|discourse|commonwealth/i.test(pr.links?.forum || '') ? pr.links.forum : null], ['Snapshot', pr.links?.snapshot], ...(pr.links?.explorers || []).slice(0, 2).map((u, i) => [`Explorer ${i + 1}`, u])].filter((x) => x[1]).map(([l, u]) => extLink(u, [l, svgIcon('ext')]))),
       pr.description ? h('p', { class: 'p-desc', style: { fontSize: '14px' } }, pr.description) : null,
     ],
     src: S['cg-coin'],
@@ -152,7 +152,7 @@ export async function render(root, { params }) {
       title: `Largest ${sym} pools by liquidity`,
       note: dx.stale ? `Stale: from ${dateTime(dx.stale.lastGoodAt)} (latest attempt: ${dx.stale.reason})` : `Searched: ${(dx.attempted || []).map((a) => `${a.platform}${a.fallback ? ' (DexScreener)' : ''}${a.ok ? '' : ' ✗'}`).join(', ')}`,
       build: hbarChart({ items: top.map((p) => ({ name: `${p.name} · ${p.dex || ''}`.slice(0, 40), value: p.liquidity, sub: `${p.network} · 24h volume ${usd(p.volume24h)}` })), name: 'Liquidity' }),
-      onClick: (p) => { const it = top[top.length - 1 - p.dataIndex]; if (it?.page) window.open(it.page, '_blank', 'noopener'); },
+      onClick: (p) => { const it = top[top.length - 1 - p.dataIndex]; if (it?.page) openExternal(it.page); },
       src: Object.entries(S).filter(([k]) => k.startsWith('gt-') || k.startsWith('ds-')).map(([, v]) => v).filter((x) => x.ok),
       sources: S,
       csvName: `${sym}-dex-pools`,

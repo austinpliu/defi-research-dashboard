@@ -50,9 +50,20 @@ export function svgIcon(name) {
   return svg;
 }
 
+/** Only http(s) URLs become links; anything else (e.g. "javascript:") is shown as plain text. */
+export function safeUrl(u) {
+  return typeof u === 'string' && /^https?:\/\//i.test(u.trim()) ? u.trim() : null;
+}
+
+export function openExternal(u) {
+  const url = safeUrl(u);
+  if (url) window.open(url, '_blank', 'noopener');
+}
+
 export function extLink(href, text, attrs = {}) {
-  if (!href) return text ? h('span', {}, text) : null;
-  return h('a', { href, target: '_blank', rel: 'noopener noreferrer', ...attrs }, text);
+  const url = safeUrl(href);
+  if (!url) return text ? h('span', {}, text) : null;
+  return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', ...attrs }, text);
 }
 
 // ---------- Glossary tooltips ----------

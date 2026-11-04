@@ -52,7 +52,7 @@ export async function render(root, { params }) {
         (a.chains || []).slice(0, 8).map((c) => h('span', { class: 'chip' }, c)),
         (a.chains || []).length > 8 ? h('span', { class: 'chip' }, `+${a.chains.length - 8} more`) : null))),
     a.description ? h('p', { class: 'p-desc' }, a.description) : unavailable('No description', a.unavailable || 'DefiLlama has no description for this protocol.'),
-    h('div', { class: 'links' }, linkList.map(([t, u]) => h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, t, svgIcon('ext')))),
+    h('div', { class: 'links' }, linkList.map(([t, u]) => extLink(u, [t, svgIcon('ext')]))),
     sourceLine([S['dl-protocol'], L.docs ? { name: 'watchlist.json', label: 'docs link entered by hand', ok: true } : null].filter(Boolean), { sources: S }));
   root.append(profile);
 

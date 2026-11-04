@@ -1,5 +1,5 @@
 // 01 — Market overview
-import { h, append, band, statTile, sparkline, sourceLine, subhead, segmented, extLink, pageError, term, unavailable } from '../ui.js';
+import { h, openExternal, append, band, statTile, sparkline, sourceLine, subhead, segmented, extLink, pageError, term, unavailable } from '../ui.js';
 import { chartCard, infoCard } from '../cards.js';
 import { loadMany } from '../data.js';
 import { lineChart, hbarChart, divergingChart, columnChart, stackedColumns, themeOf } from '../charts.js';
@@ -110,7 +110,7 @@ export async function render(root) {
       src: S[ch.src],
       sources: S,
       csvName: 'tvl-by-chain',
-      onClick: (p) => { const c = top[top.length - 1 - p.dataIndex]; if (c?.page) window.open(c.page, '_blank', 'noopener'); },
+      onClick: (p) => { const c = top[top.length - 1 - p.dataIndex]; if (c?.page) openExternal(c.page); },
       table: () => ({ columns: [{ key: 'name', label: 'Chain' }, { key: 'tvl', label: 'TVL', num: true, fmt: (v) => usd(v), csv: (r) => r.tvl }, { key: 'share', label: 'Share', num: true, fmt: (v) => pct(v, { signed: false }) }, { key: 'change7d', label: '7d', num: true, fmt: (v) => pct(v) }, { key: 'change30d', label: '30d', num: true, fmt: (v) => pct(v) }], rows: ch.top }),
     })));
   }
@@ -227,7 +227,7 @@ export async function render(root) {
       note: `${mv.eligibleCount} protocols qualify. Click a bar to open it on DefiLlama.`,
       size: 'tall',
       build: divergingChart({ items }),
-      onClick: (p) => { const list = [...items].reverse(); const it = [...g, ...l].find((x) => x.name === list[p.dataIndex]?.name); if (it?.page) window.open(it.page, '_blank', 'noopener'); },
+      onClick: (p) => { const list = [...items].reverse(); const it = [...g, ...l].find((x) => x.name === list[p.dataIndex]?.name); if (it?.page) openExternal(it.page); },
       src: S[mv.src],
       sources: S,
       csvName: 'biggest-movers',
