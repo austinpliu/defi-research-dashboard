@@ -42,7 +42,7 @@ export async function render(root, { params }) {
     statTile({ label: 'Fully diluted value', termKey: 'fdv', raw: mk.fdv, value: usd(mk.fdv), note: mk.marketCap && mk.fdv ? `Market cap is ${pct((mk.marketCap / mk.fdv) * 100, { signed: false, digits: 0 })} of FDV` : null, src: msrc, unavailableReason: mk.partial }),
     statTile({ label: '24h volume', termKey: 'volume24h', raw: mk.volume24h, value: usd(mk.volume24h), note: volMcap != null ? `${pct(volMcap, { signed: false })} of market cap traded` : null, src: msrc, unavailableReason: mk.partial }),
     statTile({ label: 'All-time high', termKey: 'ath', raw: mk.ath, value: usd(mk.ath), deltas: [{ v: mk.athChange, per: 'from ATH' }], note: mk.athDate ? date(mk.athDate) : null, src: msrc, unavailableReason: mk.partial }),
-    statTile({ label: 'DEX liquidity', termKey: 'liquidity', raw: t.dex?.totalLiquidity || null, value: usd(t.dex?.totalLiquidity), note: t.dex?.pools?.length ? `${t.dex.pools.length} largest pools` : null, src: (() => { const dexSrcs = Object.entries(S).filter(([k]) => k.startsWith('gt-') || k.startsWith('ds-')).map(([, v]) => v); return dexSrcs.find((x) => x.ok) || dexSrcs[0]; })(), unavailableReason: t.dex?.unavailable }),
+    statTile({ label: 'DEX liquidity', termKey: 'liquidity', raw: t.dex?.totalLiquidity || null, value: usd(t.dex?.totalLiquidity), note: t.dex?.pools?.length ? `${t.dex.pools.length} largest pools` : null, unavailableReason: t.dex?.pools?.length && !t.dex.totalLiquidity ? `The DEX data source reports no liquidity for these markets (24h DEX volume: ${usd(t.dex.totalVolume24h)}).` : t.dex?.unavailable, src: (() => { const dexSrcs = Object.entries(S).filter(([k]) => k.startsWith('gt-') || k.startsWith('ds-')).map(([, v]) => v); return dexSrcs.find((x) => x.ok) || dexSrcs[0]; })() }),
   ));
 
   const grid = h('div', { class: 'grid', style: { marginTop: '18px' } });
@@ -148,14 +148,16 @@ export async function render(root, { params }) {
   // DEX liquidity
   const dx = t.dex || {};
   if (dx.pools?.length) {
-    const top = dx.pools.slice(0, 10);
+    const byLiq = dx.pools.some((p) => p.liquidity != null);
+    const top = (byLiq ? dx.pools : [...dx.pools].sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0))).slice(0, 10);
+    const searched = `Searched: ${(dx.attempted || []).map((a) => `${a.platform}${a.source ? ` (${a.source})` : ''}${a.ok ? '' : ' ✗'}`).join(', ')}`;
     grid.append(h('div', { class: 'span-12' }, chartCard({
       kicker: 'DEX liquidity',
-      termKey: 'liquidity',
+      termKey: byLiq ? 'liquidity' : 'volume24h',
       take: liquidityTakeaway(sym, dx),
-      title: `Largest ${sym} pools by liquidity`,
-      note: dx.stale ? `Stale: from ${dateTime(dx.stale.lastGoodAt)} (latest attempt: ${dx.stale.reason})` : `Searched: ${(dx.attempted || []).map((a) => `${a.platform}${a.fallback ? ' (DexScreener)' : ''}${a.ok ? '' : ' ✗'}`).join(', ')}`,
-      build: hbarChart({ items: top.map((p) => ({ name: `${p.name} · ${p.dex || ''}`.slice(0, 40), value: p.liquidity, sub: `${p.network} · 24h volume ${usd(p.volume24h)}` })), name: 'Liquidity' }),
+      title: byLiq ? `Largest ${sym} pools by liquidity` : `${sym} DEX markets by 24-hour volume`,
+      note: dx.stale ? `Stale: from ${dateTime(dx.stale.lastGoodAt)} (latest attempt: ${dx.stale.reason})` : byLiq ? searched : `The data source reports no liquidity figure for these markets, so they are ranked by 24h volume. ${searched}`,
+      build: hbarChart({ items: top.map((p) => ({ name: `${p.name} · ${p.dex || ''}`.slice(0, 40), value: byLiq ? p.liquidity : p.volume24h, sub: byLiq ? `${p.network} · 24h volume ${usd(p.volume24h)}` : `${p.network} · liquidity not reported` })), name: byLiq ? 'Liquidity' : '24h volume' }),
       onClick: (p) => { const it = top[top.length - 1 - p.dataIndex]; if (it?.page) openExternal(it.page); },
       src: Object.entries(S).filter(([k]) => k.startsWith('gt-') || k.startsWith('ds-')).map(([, v]) => v).filter((x) => x.ok),
       sources: S,

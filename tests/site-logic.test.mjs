@@ -115,6 +115,12 @@ test('supply, liquidity, yield and price takeaways', () => {
   assert.match(text(priceTakeaway('T', { price: 1, athChange: -80, athDate: '2021-05-18T00:00:00Z' })), /80% below its all-time high from May 2021/);
 });
 
+test('liquidityTakeaway falls back to volume when markets report no liquidity', () => {
+  const dex = { totalLiquidity: null, pools: [{ name: 'H / USDC', dex: 'Order book', liquidity: null, volume24h: 1.07e8 }, { name: 'H / USDT', liquidity: null, volume24h: 1e4 }] };
+  assert.equal(text(liquidityTakeaway('H', dex)), "H's busiest DEX market is H / USDC on Order book, with $107M traded in 24 hours");
+  assert.equal(liquidityTakeaway('H', { pools: [{ name: 'x', liquidity: null, volume24h: 0 }] }), null);
+});
+
 test('compareTakeaway names the fastest grower and the biggest loser', () => {
   const t = compareTakeaway([{ name: 'A', change: 69 }, { name: 'B', change: -53 }, { name: 'C', change: 5 }], 'TVL', 'the past year');
   assert.equal(text(t), 'A grew TVL fastest over the past year (+69%), while B shrank 53%');

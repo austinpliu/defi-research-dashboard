@@ -132,9 +132,11 @@ export async function fetchTokenPools(http, platforms, getNetworkMap, { maxPlatf
   const seen = new Set();
   const unique = pools.filter((p) => (seen.has(p.address) ? false : (seen.add(p.address), true)));
   unique.sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
+  const withLiq = unique.filter((p) => p.liquidity != null);
   return {
     pools: unique.slice(0, 15),
-    totalLiquidity: roundSmart(unique.reduce((s, p) => s + (p.liquidity || 0), 0)),
+    // null (unknown) when no pool reports liquidity, e.g. order-book markets
+    totalLiquidity: withLiq.length ? roundSmart(withLiq.reduce((s, p) => s + p.liquidity, 0)) : null,
     totalVolume24h: roundSmart(unique.reduce((s, p) => s + (p.volume24h || 0), 0)),
     poolCount: unique.length,
     sources,

@@ -191,7 +191,12 @@ export function supplyTakeaway(symbol, supply) {
 
 export function liquidityTakeaway(symbol, dex) {
   const top = dex?.pools?.[0];
-  if (!top || !isNum(top.liquidity)) return null;
+  if (!top) return null;
+  if (!isNum(top.liquidity)) {
+    const busiest = [...dex.pools].filter((p) => isNum(p.volume24h)).sort((a, b) => b.volume24h - a.volume24h)[0];
+    if (!busiest || !(busiest.volume24h > 0)) return null;
+    return { pre: `${symbol}'s busiest DEX market is `, hl: `${busiest.name} on ${busiest.dex || 'a DEX'}`, post: `, with ${usd(busiest.volume24h)} traded in 24 hours` };
+  }
   const total = dex.totalLiquidity;
   if (isNum(total) && total > 0 && top.liquidity / total >= 0.5) {
     return { pre: `Most of ${symbol}'s DEX liquidity sits in `, hl: `one ${top.dex || 'DEX'} pool`, post: ` (${top.name}, ${usd(top.liquidity)})` };
