@@ -24,7 +24,7 @@ Me: a writer and researcher, not an engineer. I can run commands and read code, 
 On every chart:
 
 - The headline is a claim generated from the live data by simple rules ("DeFi TVL fell 12% in 30 days", "Ethereum still holds more than half of all DeFi TVL"), with the key phrase highlighted. No headline is fixed text, so none can go stale.
-- **PNG** downloads the chart with its headline and source line, ready for an article.
+- **PNG** downloads the chart with its headline and source line, ready for an article. It uses the theme you're viewing, so switch to light mode first if you want a light image.
 - **Table** shows the numbers behind the chart; **CSV** downloads them.
 - A source line names the source, links the page and the API endpoint, and shows when it was fetched.
 
