@@ -98,8 +98,9 @@ async function main() {
       // Bot protection (e.g. Cloudflare's "Just a moment...") or rate limits mean
       // "couldn't check automatically", not "broken".
       const bodyStart = String(r.data || r.error || '').slice(0, 3000);
-      if (!r.ok && (r.status === 429 || ((r.status === 403 || r.status === 503) && /just a moment|cf-chl|cloudflare|attention required|captcha|access denied|<!DOCTYPE html/i.test(bodyStart)))) {
-        results.push({ url, where: [...where].slice(0, 5), ok: null, status: r.status, note: r.status === 429 ? 'Rate-limited during the check — open by hand' : 'Site blocks automated checks (bot protection) — open by hand', checkedAt: r.fetchedAt });
+      if (!r.ok && (r.status === 0 || r.status === 429 || ((r.status === 403 || r.status === 503) && /just a moment|cf-chl|cloudflare|attention required|captcha|access denied|<!DOCTYPE html/i.test(bodyStart)))) {
+        const note = r.status === 0 ? `Couldn't connect during the check (${r.error}) — open by hand` : r.status === 429 ? 'Rate-limited during the check — open by hand' : 'Site blocks automated checks (bot protection) — open by hand';
+        results.push({ url, where: [...where].slice(0, 5), ok: null, status: r.status, note, checkedAt: r.fetchedAt });
         process.stdout.write('~');
         continue;
       }

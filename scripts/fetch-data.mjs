@@ -28,6 +28,7 @@ const PROBE = process.env.PROBE === '1';
 const started = Date.now();
 const problems = [];
 const problem = (severity, message, hint) => {
+  if (problems.some((p) => p.message === message)) return; // say each thing once
   problems.push({ severity, message, ...(hint ? { hint } : {}) });
   console.log(`${severity === 'error' ? '✗✗' : '!!'} ${message}${hint ? ` — ${hint}` : ''}`);
 };
@@ -81,7 +82,7 @@ function carrySections(next, prev, groups) {
     if (data) {
       paths.forEach((p, i) => setPath(next, p, prevData[i]));
       next.sources[src] = source;
-      problem('warn', `${src}: using data from ${source.stale.lastGoodAt} because the latest fetch failed (${fresh.error})`);
+      problem('warn', `${src}: showing the copy fetched ${source.stale.lastGoodAt} because the latest fetch failed (${String(fresh.error).slice(0, 160)})`);
     }
   }
   return next;
@@ -187,7 +188,9 @@ async function main() {
     probe(`protocol ${slug}`, r.protocol);
     probe(`fees ${slug}`, r.fees);
     const core = buildProtocolCore(r, slug);
-    const kidsAll = protocolList ? protocolList.filter((x) => x.parentProtocol === `parent#${slug}`) : [];
+    // a parent's id isn't always parent#<slug> (Sky's is parent#maker), so match on the id DefiLlama returns
+    const parentIds = new Set([`parent#${slug}`, String(r.protocol.data?.id || '')].filter((x) => x.startsWith('parent#')));
+    const kidsAll = protocolList ? protocolList.filter((x) => parentIds.has(x.parentProtocol)) : [];
     if (PROBE) console.log(`   ↳ ${slug} children in /protocols: ${JSON.stringify(kidsAll.map((k) => ({ slug: k.slug, tvl: k.tvl, cat: k.category })))}`);
     // Some parents (seen with RWA issuers) return no TVL at all; then add up the
     // child protocols' own TVL series and say so on the page.
@@ -212,7 +215,7 @@ async function main() {
     }
     // Parent protocols carry no category/chains of their own; use their children's.
     if (core.about && protocolList) {
-      const kids = protocolList.filter((x) => x.parentProtocol === `parent#${slug}`);
+      const kids = kidsAll;
       if (!core.about.category && kids.length) {  // kids === kidsAll
         const counts = {};
         for (const k of kids) if (k.category) counts[k.category] = (counts[k.category] || 0) + (k.tvl || 0) + 1;
@@ -246,6 +249,7 @@ async function main() {
 
     // yields
     const slugs = childSlugs(protocolList, slug, core.about?.otherProtocols || []);
+    for (const k of kidsAll) slugs.add(k.slug);
     const pools = poolsForProtocol(raw.pools, slugs);
     doc.sources['dl-yields'] = yieldsSrc;
     doc.yields = pools ? { list: pools, projects: [...slugs], src: 'dl-yields' } : { unavailable: raw.pools.error, src: 'dl-yields' };
@@ -253,6 +257,7 @@ async function main() {
     // hacks / incidents
     const names = [entry.name, core.about?.name, ...(core.about?.otherProtocols || [])].filter(Boolean);
     const ids = familyIds(protocolList, slug, r.protocol.data?.id);
+    for (const k of kidsAll) ids.add(String(k.id));
     const hacks = hacksForProtocol(raw.hacks, names, ids);
     doc.sources['dl-hacks'] = hacksSrc;
     doc.hacks = hacks ? { list: hacks, src: 'dl-hacks' } : { unavailable: hacksSrc.error, note: hacksSrc.note, src: 'dl-hacks' };

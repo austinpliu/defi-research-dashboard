@@ -622,6 +622,7 @@ export function poolsForProtocol(poolsRes, slugs, limit = 12) {
       apyMean30d: roundSmart(p.apyMean30d),
       stablecoin: Boolean(p.stablecoin),
       page: `${DL.site}/yields/pool/${p.pool}`,
+      api: `${DL.yields}/chart/${p.pool}`,
     }));
 }
 

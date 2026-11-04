@@ -23,35 +23,46 @@ export function spacesFromSources({ governanceID = [], snapshotUrl = null, overr
 const FULL_FIELDS = 'id title start end state author choices scores scores_total votes quorum discussion link space { id name }';
 const MIN_FIELDS = 'id title start end state choices scores scores_total votes space { id name }';
 
-function query(fields, withSpaces, nSpaces) {
-  const perSpace = Array.from({ length: nSpaces }, (_, i) => `  latest${i}: proposals(first: 8, where: { space: $s${i} }, orderBy: "created", orderDirection: desc) { ${fields} }`).join('\n');
-  const vars = Array.from({ length: nSpaces }, (_, i) => `, $s${i}: String`).join('');
-  return `query Gov($spaces: [String], $since: Int${vars}) {
-${perSpace}
+// Snapshot's hub allows at most 5 top-level selections per query, so the work is
+// split: one query for active/pending/recently-closed proposals + space stats,
+// then "latest proposals" for up to 5 spaces per query.
+export function mainQuery(fields, withSpaces) {
+  return `query Gov($spaces: [String], $since: Int) {
   active: proposals(first: 50, where: { space_in: $spaces, state: "active" }, orderBy: "end", orderDirection: asc) { ${fields} }
   pending: proposals(first: 50, where: { space_in: $spaces, state: "pending" }, orderBy: "start", orderDirection: asc) { ${fields} }
   closed: proposals(first: 60, where: { space_in: $spaces, state: "closed", end_gt: $since }, orderBy: "end", orderDirection: desc) { ${fields} }
   ${withSpaces ? 'spaces(first: 50, where: { id_in: $spaces }) { id name proposalsCount followersCount }' : ''}
 }`;
 }
+export function latestQuery(fields, n) {
+  const vars = Array.from({ length: n }, (_, i) => `$s${i}: String`).join(', ');
+  const roots = Array.from({ length: n }, (_, i) => `  latest${i}: proposals(first: 8, where: { space: $s${i} }, orderBy: "created", orderDirection: desc) { ${fields} }`).join('\n');
+  return `query Latest(${vars}) {\n${roots}\n}`;
+}
+
+async function gql(http, query, variables, label) {
+  const res = await http.json(SNAPSHOT.hub, {
+    method: 'POST',
+    label,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+    retries: 2,
+  });
+  if (res.ok && res.data?.errors?.length) {
+    return { ...res, ok: false, error: `GraphQL error: ${res.data.errors.map((e) => e.message).join('; ').slice(0, 200)}` };
+  }
+  return res;
+}
 
 export async function fetchProposals(http, spaces, { closedDays = 45 } = {}) {
   if (!spaces.length) return { proposals: [], source: null, spaceInfo: {} };
   const since = Math.floor(Date.now() / 1000) - closedDays * 86400;
   let res = null;
-  for (const fields of [FULL_FIELDS, MIN_FIELDS]) {
-    res = await http.json(SNAPSHOT.hub, {
-      method: 'POST',
-      label: 'Snapshot proposals',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query(fields, fields === FULL_FIELDS, spaces.length), variables: { spaces, since, ...Object.fromEntries(spaces.map((s, i) => [`s${i}`, s])) } }),
-      retries: 2,
-    });
-    if (res.ok && res.data?.errors?.length) {
-      res = { ...res, ok: false, error: `GraphQL error: ${res.data.errors.map((e) => e.message).join('; ').slice(0, 200)}` };
-      continue; // try again with the minimal field set
-    }
-    break;
+  let fields = FULL_FIELDS;
+  for (const f of [FULL_FIELDS, MIN_FIELDS]) {
+    fields = f;
+    res = await gql(http, mainQuery(f, f === FULL_FIELDS), { spaces, since }, 'Snapshot proposals');
+    if (res.ok) break;
   }
   const source = sourceRecord({
     name: 'Snapshot',
@@ -61,9 +72,14 @@ export async function fetchProposals(http, spaces, { closedDays = 45 } = {}) {
     api: `${SNAPSHOT.hub} (POST, spaces: ${spaces.join(', ')})`,
   });
   if (!res.ok) return { proposals: [], source, spaceInfo: {} };
-  // latest = most recent proposals per space even if older than the window (dedupe by id)
+  const latest = [];
+  for (let i = 0; i < spaces.length; i += 5) {
+    const chunk = spaces.slice(i, i + 5);
+    const r = await gql(http, latestQuery(fields, chunk.length), Object.fromEntries(chunk.map((s, j) => [`s${j}`, s])), 'Snapshot latest proposals');
+    if (r.ok) chunk.forEach((_, j) => latest.push(...(r.data.data?.[`latest${j}`] || [])));
+  }
+  // dedupe: the same proposal can be both "closed recently" and "latest"
   const seen = new Set();
-  const latest = spaces.flatMap((_, i) => res.data.data?.[`latest${i}`] || []);
   const all = [...(res.data.data?.active || []), ...(res.data.data?.pending || []), ...(res.data.data?.closed || []), ...latest]
     .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
   const spaceInfo = Object.fromEntries((res.data.data?.spaces || []).map((sp) => [sp.id, { name: sp.name, proposalsCount: sp.proposalsCount ?? null, followers: sp.followersCount ?? null }]));

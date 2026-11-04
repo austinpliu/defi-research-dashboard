@@ -6,7 +6,7 @@ import {
 } from '../scripts/lib/util.mjs';
 import { parseFeed } from '../scripts/lib/rss.mjs';
 import { prettyParentName, groupOverview, isChainKey } from '../scripts/lib/defillama.mjs';
-import { spacesFromSources } from '../scripts/lib/governance.mjs';
+import { spacesFromSources, mainQuery, latestQuery } from '../scripts/lib/governance.mjs';
 import { carryForward } from '../scripts/lib/sources.mjs';
 import { classify } from '../scripts/lib/feeds.mjs';
 
@@ -119,6 +119,12 @@ test('spacesFromSources reads DefiLlama ids and CoinGecko URLs', () => {
   assert.deepEqual(spacesFromSources({ governanceID: ['snapshot:aave.eth', 'eip155:1:0xabc'] }), ['aave.eth']);
   assert.deepEqual(spacesFromSources({ snapshotUrl: 'https://snapshot.box/#/s:pendle.eth' }), ['pendle.eth']);
   assert.deepEqual(spacesFromSources({ snapshotUrl: 'https://snapshot.org/#/ens.eth/' }), ['ens.eth']);
+});
+
+test('Snapshot queries stay within the hub limit of 5 top-level selections', () => {
+  const roots = (q) => (q.match(/^\s{2}\w+: (proposals|spaces)\(/gm) || []).length + (q.match(/^\s{2}spaces\(/gm) || []).length;
+  assert.ok(roots(mainQuery('id', true)) <= 5);
+  assert.equal(roots(latestQuery('id', 5)), 5);
 });
 
 test('carryForward reuses recent data, marks it stale, and gives up after 48h', () => {

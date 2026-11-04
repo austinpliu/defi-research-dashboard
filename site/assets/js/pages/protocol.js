@@ -255,7 +255,7 @@ export async function render(root, { params }) {
       ? dataTable({
         caption: `${name} yield pools`, csvName: `${slug}-yield-pools`, sortKey: 'tvl', pageSize: 12, filters: [{ key: 'chain', label: 'Chain' }],
         columns: [
-          { key: 'symbol', label: 'Pool', fmt: (v, r) => h('span', {}, extLink(r.page, v), r.meta ? h('span', { class: 'sub' }, ` ${r.meta}`) : null) },
+          { key: 'symbol', label: 'Pool', fmt: (v, r) => h('span', {}, extLink(r.page, v), r.meta ? h('span', { class: 'sub' }, ` ${r.meta}`) : null, r.api ? h('span', { class: 'sub' }, ' · ', extLink(r.api, 'API', { title: 'DefiLlama pool history endpoint' })) : null) },
           { key: 'chain', label: 'Chain' },
           { key: 'project', label: 'Project' },
           { key: 'tvl', label: 'Deposits', num: true, fmt: (v) => usd(v), termKey: 'tvl' },
@@ -266,7 +266,7 @@ export async function render(root, { params }) {
           { key: 'stablecoin', label: 'Stable', fmt: (v) => (v ? 'yes' : '') },
         ],
         rows: Y.list,
-        csvExtra: [{ label: 'DefiLlama pool page', get: (r) => r.page }],
+        csvExtra: [{ label: 'DefiLlama pool page', get: (r) => r.page }, { label: 'DefiLlama pool API', get: (r) => r.api || '' }],
       })
       : unavailable('No yield pools', Y.unavailable || `DefiLlama’s yields database has no pools for ${name}.`),
     src: S['dl-yields'],
