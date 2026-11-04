@@ -187,10 +187,33 @@ async function main() {
     probe(`protocol ${slug}`, r.protocol);
     probe(`fees ${slug}`, r.fees);
     const core = buildProtocolCore(r, slug);
+    const kidsAll = protocolList ? protocolList.filter((x) => x.parentProtocol === `parent#${slug}`) : [];
+    if (PROBE) console.log(`   ↳ ${slug} children in /protocols: ${JSON.stringify(kidsAll.map((k) => ({ slug: k.slug, tvl: k.tvl, cat: k.category })))}`);
+    // Some parents (seen with RWA issuers) return no TVL at all; then add up the
+    // child protocols' own TVL series and say so on the page.
+    if (!core.tvl?.series?.length && kidsAll.length) {
+      const kidRes = await Promise.all(kidsAll.slice(0, 6).map((k) => http.json(`${DL.api}/protocol/${encodeURIComponent(k.slug)}`, { label: `DefiLlama child protocol ${k.slug}` })));
+      const byDay = new Map();
+      const used = [];
+      kidRes.forEach((kr, i) => {
+        const s2 = kr.ok ? dailySeries(normSeries(kr.data?.tvl || [], { tsKey: 'date', valKey: 'totalLiquidityUSD' })) : [];
+        if (s2.length) used.push(kidsAll[i].slug);
+        for (const [ts, v] of s2) byDay.set(ts, (byDay.get(ts) || 0) + v);
+      });
+      const summed = [...byDay.entries()].sort((a, b) => a[0] - b[0]);
+      if (summed.length) {
+        const tmp = buildProtocolCore({ ...r, protocol: { ...r.protocol, data: { ...r.protocol.data, tvl: summed.map(([date, v]) => ({ date, totalLiquidityUSD: v })) } } }, slug);
+        core.tvl = { ...tmp.tvl, note: `DefiLlama returned no TVL for the ${entry.name} parent, so this is the sum of its sub-protocols' TVL (${used.join(', ')}).` };
+      } else {
+        core.tvl = { ...core.tvl, unavailable: `DefiLlama reports no TVL history for ${entry.name} or its sub-protocols (${kidsAll.map((k) => k.slug).join(', ')}).` };
+      }
+    } else if (!core.tvl?.series?.length && core.tvl) {
+      core.tvl.unavailable = core.tvl.unavailable || `DefiLlama reports no TVL history for ${entry.name}.`;
+    }
     // Parent protocols carry no category/chains of their own; use their children's.
     if (core.about && protocolList) {
       const kids = protocolList.filter((x) => x.parentProtocol === `parent#${slug}`);
-      if (!core.about.category && kids.length) {
+      if (!core.about.category && kids.length) {  // kids === kidsAll
         const counts = {};
         for (const k of kids) if (k.category) counts[k.category] = (counts[k.category] || 0) + (k.tvl || 0) + 1;
         core.about.category = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
@@ -331,6 +354,11 @@ async function main() {
   const allSpaces = [...spaceOwner.keys()];
   const gov = await fetchProposals(http, allSpaces);
   if (gov.source && !gov.source.ok) problem('warn', `Snapshot query failed (${gov.source.error})`);
+  if (gov.source?.ok && gov.spaceInfo && Object.keys(gov.spaceInfo).length) {
+    for (const s of allSpaces) {
+      if (!gov.spaceInfo[s]) problem('warn', `Snapshot space "${s}" (${spaceOwner.get(s)?.entry.name}) was not found on Snapshot`, `Find the protocol's space on snapshot.org and list its id under "snapshot" in watchlist.json (or remove it)`);
+    }
+  }
   for (const p of protocols) {
     const props = gov.proposals.filter((x) => p.spaces.includes(x.space));
     p.doc.sources.snapshot = gov.source || sourceRecord({ name: 'Snapshot', label: 'Governance proposals', page: 'https://snapshot.org', res: { ok: false, error: 'No Snapshot space found for this protocol' } });
