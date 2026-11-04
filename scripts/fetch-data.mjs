@@ -369,7 +369,8 @@ async function main() {
 
   // 6. Feeds (protocol blogs/forums + crypto news) ----------------------------
   console.log('\n== Feeds');
-  const watchMeta = protocols.filter((p) => p.entry.group === 'watchlist').map((p) => ({ slug: p.doc.slug, name: p.entry.name, symbol: p.entry.symbol || p.doc.symbol, keywords: p.entry.keywords }));
+  // every tracked protocol (watchlist first, then peers) can be matched in news and catalysts
+  const watchMeta = protocols.map((p) => ({ slug: p.doc.slug, name: p.entry.name, symbol: p.entry.symbol || p.doc.symbol, keywords: p.entry.keywords, group: p.entry.group }));
   const feedJobs = [
     ...protocols.flatMap((p) => (p.entry.feeds || []).map((f) => ({ ...f, owner: p.doc.slug }))),
     ...(watchlist.newsFeeds || []).map((f) => ({ ...f, type: 'news' })),
@@ -520,7 +521,7 @@ async function main() {
     };
   });
   if (gov.source) catSources.snapshot = gov.source;
-  const scheduled = protocols.filter((p) => p.entry.group === 'watchlist').flatMap((p) =>
+  const scheduled = protocols.flatMap((p) =>
     (p.doc.hallmarks?.list || [])
       .filter((h) => h.ts * 1000 > now)
       .map((h) => ({
@@ -540,7 +541,7 @@ async function main() {
   if (scheduled.length) catSources['dl-hallmarks'] = sourceRecord({ name: 'DefiLlama', label: 'Protocol timeline notes', page: `${DL.site}/`, res: raw.protocols });
 
   const watchSet = new Set(watchMeta.map((w) => w.slug));
-  const catalystItems = [...govItems.filter((g) => g.group !== 'peer'), ...unlockItems, ...scheduled, ...feedItemsAll.filter((i) => i.protocols.some((s) => watchSet.has(s)))]
+  const catalystItems = [...govItems, ...unlockItems, ...scheduled, ...feedItemsAll.filter((i) => i.protocols.some((s) => watchSet.has(s)))]
     .sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
   const headlines = feedItemsAll
     .filter((i) => i.baseType === 'news' && (i.defi || i.protocols.length))
@@ -551,7 +552,7 @@ async function main() {
     items: catalystItems,
     headlines,
     unavailable: unlockNote ? [{ type: 'unlock', reason: unlockNote }] : [],
-    protocols: watchMeta.map(({ slug, name, symbol }) => ({ slug, name, symbol })),
+    protocols: watchMeta.map(({ slug, name, symbol, group }) => ({ slug, name, symbol, group })),
     sources: catSources,
     disclaimer: 'Information, not predictions. Each item links to its original source; dates and labels come from that source or from simple keyword rules described on the page.',
   };

@@ -39,7 +39,7 @@ export async function render(root, { query }) {
     q: query.get('q') || '',
   };
 
-  root.append(band({ n: '05', tag: 'Section 05 · Catalysts', title: 'What could move your tokens', sub: 'Governance votes, scheduled events, launches and upgrades, forum posts and news about your watchlist — each with a link to the original. Information, not predictions.' }));
+  root.append(band({ n: '05', tag: 'Section 05 · Catalysts', title: 'What could move your tokens', sub: 'Governance votes, scheduled events, launches and upgrades, forum posts and news about your watchlist (and the peers you compare it with) — each with a link to the original. Information, not predictions.' }));
   root.append(h('div', { class: 'disclaimer', role: 'note', style: { marginBottom: '14px' } }, h('span', { class: 'chip' }, 'Information, not prediction'), 'Nothing here says a price will move. Types like “launch / upgrade” are assigned by simple keyword rules on the headline; open the source to judge for yourself.'));
   for (const u of cat.unavailable || []) root.append(h('div', { style: { marginBottom: '14px' } }, unavailable(`${TYPES[u.type]?.label || u.type}s: unavailable`, u.reason)));
 
@@ -56,7 +56,7 @@ export async function render(root, { query }) {
   const search = h('input', { type: 'search', placeholder: 'Search titles…', value: state.q, 'aria-label': 'Search catalysts' });
   search.addEventListener('input', () => { state.q = search.value.trim(); apply(); });
   root.append(h('div', { class: 'filters' },
-    h('label', { class: 'lbl' }, 'Token'), chipRow(protocols.map((p) => [p.slug, p.symbol || p.name]), state.p, 'p'),
+    h('label', { class: 'lbl' }, 'Token'), chipRow(protocols.map((p) => [p.slug, `${p.symbol || p.name}${p.group === 'peer' ? ' (peer)' : ''}`]), state.p, 'p'),
     h('label', { class: 'lbl' }, 'Type'), chipRow(Object.entries(TYPES).filter(([k]) => counts[k]).map(([k, t]) => [k, `${t.label} (${counts[k]})`]), state.types, 'type'),
     h('label', { class: 'lbl' }, 'When'), rangeSel, search));
 
