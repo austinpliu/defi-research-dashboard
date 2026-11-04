@@ -90,10 +90,11 @@ The data files in `site/data/` are already in the repository (the robot updates 
 
 ## How to deploy it (free, on GitHub Pages)
 
-This needs two one-time steps on GitHub; after that it updates itself.
+This needs a few one-time clicks on GitHub; after that it updates itself.
 
 1. **Put the code on the `main` branch.** If you're reading this on a branch, open a pull request into `main` and merge it.
-2. **Turn on Pages:** in the repository go to **Settings → Pages**. Under **Build and deployment → Source** choose **GitHub Actions**. That's it.
+2. **Turn on Pages:** in the repository go to **Settings → Pages**. Under **Build and deployment → Source** choose **GitHub Actions**.
+3. **Publish the first time:** go to the **Actions** tab, choose **Publish site** on the left, and press **Run workflow** (branch `main`). After a minute or two the site is live. (If you turned on Pages *before* merging, this happens automatically.)
 
 From then on:
 
