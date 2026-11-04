@@ -1,0 +1,77 @@
+# Fetches fresh numbers from the free public APIs and saves them as JSON in site/data/.
+#
+# When it runs:
+#   - every 6 hours (schedule below, times are UTC)
+#   - when you press "Run workflow" on the Actions tab
+#   - when you push a change to watchlist.json or the data scripts
+# On the main branch it then publishes the website to GitHub Pages.
+name: Update data
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'watchlist.json'
+      - 'scripts/**'
+      - '.github/workflows/update-data.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run tests
+        run: node --test 'tests/*.test.mjs'
+
+      - name: Fetch data from public APIs
+        env:
+          PROBE: '1'
+        run: node scripts/fetch-data.mjs
+
+      - name: Check that source links open
+        run: node scripts/check-links.mjs
+        continue-on-error: true
+
+      - name: Save data to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data
+          if git diff --cached --quiet; then
+            echo "No data changes."
+            exit 0
+          fi
+          git commit -m "Update data $(date -u +'%Y-%m-%d %H:%M UTC')"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            sleep $((attempt * 10))
+          done
+          echo "Could not push the data commit." >&2
+          exit 1
+
+  publish:
+    needs: fetch
+    # Only the main branch is published. Change 'main' if your default branch is named differently.
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/publish-site.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
