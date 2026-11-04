@@ -52,8 +52,11 @@ export async function render(root, { params }) {
         (a.chains || []).slice(0, 8).map((c) => h('span', { class: 'chip' }, c)),
         (a.chains || []).length > 8 ? h('span', { class: 'chip' }, `+${a.chains.length - 8} more`) : null))),
     a.description ? h('p', { class: 'p-desc' }, a.description) : unavailable('No description', a.unavailable || 'DefiLlama has no description for this protocol.'),
+    d.token?.description && d.token.description !== a.description
+      ? h('p', { class: 'p-desc', style: { fontSize: '14px', color: 'var(--ink-2)', marginTop: '8px' } }, h('b', {}, 'CoinGecko: '), d.token.description)
+      : null,
     h('div', { class: 'links' }, linkList.map(([t, u]) => extLink(u, [t, svgIcon('ext')]))),
-    sourceLine([S['dl-protocol'], L.docs ? { name: 'watchlist.json', label: 'docs link entered by hand', ok: true } : null].filter(Boolean), { sources: S }));
+    sourceLine([S['dl-protocol'], d.token?.description ? S['cg-coin'] : null, L.docs ? { name: 'watchlist.json', label: 'docs link entered by hand', ok: true } : null].filter(Boolean), { sources: S }));
   root.append(profile);
 
   // ---------- stat strip ----------
@@ -86,6 +89,7 @@ export async function render(root, { params }) {
       kicker: 'Total value locked',
       take: trendTakeaway(`${name} TVL`, T.series),
       title: `${name} TVL, ${rangeLabel(range)}`,
+      note: T.note || null,
       size: 'tall',
       controls: segmented(RANGES, range, (v) => { range = v; card.update({ build: build(), title: `${name} TVL, ${rangeLabel(v)}` }); }, 'Time range'),
       build: build(),
@@ -269,11 +273,25 @@ export async function render(root, { params }) {
   const now = Date.now() / 1000;
   const props = (G.proposals || []).slice().sort((x, y) => (x.state === y.state ? (x.state === 'closed' ? y.end - x.end : x.end - y.end) : ['active', 'pending', 'closed'].indexOf(x.state) - ['active', 'pending', 'closed'].indexOf(y.state)));
   const openN = props.filter((p) => p.state === 'active').length;
+  const pendingN = props.filter((p) => p.state === 'pending').length;
+  const recentN = props.filter((p) => p.end >= now - 45 * 86400).length;
+  const lastClosed = props.filter((p) => p.state === 'closed').sort((x, y) => y.end - x.end)[0];
+  const spaceStats = Object.entries(G.spaceInfo || {}).filter(([, v]) => v).map(([k, v]) => `${v.name || k}: ${v.proposalsCount ?? '?'} proposals all-time, ${v.followers ?? '?'} followers`);
+  const missingSpaces = Object.entries(G.spaceInfo || {}).filter(([, v]) => !v).map(([k]) => k);
+  const govTake = openN
+    ? { pre: '', hl: `${openN} vote${openN === 1 ? '' : 's'} open now`, post: pendingN ? `, ${pendingN} more starting soon` : '' }
+    : pendingN
+      ? { pre: '', hl: `${pendingN} vote${pendingN === 1 ? '' : 's'} starting soon`, post: '' }
+      : recentN
+        ? { pre: `${recentN} Snapshot vote${recentN === 1 ? '' : 's'} `, hl: 'in the last 45 days', post: '' }
+        : lastClosed
+          ? { pre: 'The last Snapshot vote ', hl: `closed ${relative(lastClosed.end * 1000)}`, post: '' }
+          : null;
   grid.append(h('div', { class: 'span-6 acc-purple' }, infoCard({
     kicker: 'Governance',
-    take: props.length ? (openN ? { pre: '', hl: `${openN} vote${openN === 1 ? '' : 's'} open now`, post: ` on ${G.spaces.join(', ')}` } : { pre: `${props.length} Snapshot proposal${props.length === 1 ? '' : 's'} `, hl: 'in the last 45 days', post: '' }) : null,
+    take: govTake,
     fallback: `${name} governance`,
-    body: props.length
+    body: [spaceStats.length ? h('p', { class: 'chart-note' }, spaceStats.join(' · ')) : null, props.length
       ? h('ul', { class: 'feed' }, props.slice(0, 10).map((p) => h('li', {},
         h('div', { class: 'when' }, p.state === 'active' ? 'Closes' : p.state === 'pending' ? 'Opens' : 'Closed', h('br'), shortDate(p.state === 'pending' ? p.start : p.end)),
         h('div', { class: 'what' }, extLink(p.url, p.title), h('div', { class: 'meta' },
@@ -281,7 +299,7 @@ export async function render(root, { params }) {
           p.leadingChoice ? h('span', {}, `${p.state === 'closed' ? 'Result' : 'Leading'}: “${p.leadingChoice}” ${pct(p.leadingShare, { signed: false, digits: 0 })}`) : null,
           p.votes != null ? h('span', {}, `${compact(p.votes)} votes`) : null,
           p.discussion ? extLink(p.discussion, 'discussion') : null)))))
-      : unavailable('No Snapshot proposals', G.unavailable || 'No open, upcoming or recently closed proposals in this protocol’s Snapshot space.'),
+      : unavailable('No Snapshot proposals', G.unavailable || (missingSpaces.length ? `Snapshot doesn’t recognise the space${missingSpaces.length === 1 ? '' : 's'} ${missingSpaces.join(', ')} (taken from DefiLlama/CoinGecko or watchlist.json). This protocol may vote on-chain instead.` : 'No proposals found in this protocol’s Snapshot space.'))],
     src: S.snapshot,
     sources: S,
   })));
