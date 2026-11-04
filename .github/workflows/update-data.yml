@@ -51,14 +51,23 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/data
-          if git diff --cached --quiet; then
-            echo "No data changes."
-            exit 0
-          fi
-          git commit -m "Update data $(date -u +'%Y-%m-%d %H:%M UTC')"
+          # This run rewrote every data file, so its copy wins. Put it on top of the
+          # newest commit on the branch (someone may have pushed code, or an earlier
+          # run its data, while this run was fetching) instead of merging.
+          fresh="$(mktemp -d)"
+          cp -R site/data/. "$fresh/"
           for attempt in 1 2 3 4; do
-            if git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; then
+            git fetch --quiet origin "+refs/heads/${GITHUB_REF_NAME}:refs/remotes/origin/${GITHUB_REF_NAME}"
+            git reset --quiet --hard "origin/${GITHUB_REF_NAME}"
+            rm -rf site/data && mkdir -p site/data && cp -R "$fresh/." site/data/
+            git add -A site/data
+            if git diff --cached --quiet; then
+              echo "No data changes."
+              exit 0
+            fi
+            git commit --quiet -m "Update data $(date -u +'%Y-%m-%d %H:%M UTC')"
+            if git push --quiet origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "Saved data on top of $(git rev-parse --short HEAD~1)."
               exit 0
             fi
             sleep $((attempt * 10))
