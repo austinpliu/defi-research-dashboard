@@ -277,7 +277,7 @@ export function stackedColumns({ series, fmt = usd, axisFmt = fmtAxisUsd, period
         data: stamps.map(label),
         axisLine: { lineStyle: { color: t.axis } },
         axisTick: { show: false },
-        axisLabel: { color: t.muted, fontSize: 11, hideOverlap: true, formatter: (v) => (v.startsWith('Jan') ? v.slice(4) : v.slice(0, 3)) },
+        axisLabel: { color: t.muted, fontSize: 11, hideOverlap: true, formatter: (v) => (period === 'month' ? `${v.slice(0, 3)} '${v.slice(-2)}` : v) },
         splitLine: { show: false },
       },
       yAxis: { type: 'value', axisLabel: { color: t.muted, fontSize: 11, formatter: axisFmt }, splitLine: { lineStyle: { color: t.grid } }, axisLine: { show: false }, splitNumber: 4 },

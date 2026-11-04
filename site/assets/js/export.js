@@ -1,5 +1,7 @@
 // Downloads: tables as CSV, chart cards as PNG (headline + chart + source line,
 // ready to drop into an article).
+/* global echarts */
+import { themeOf } from './charts.js';
 
 function stamp() {
   return new Date().toISOString().slice(0, 10);
@@ -103,9 +105,27 @@ export async function exportCardPNG({ card, chartEl, kicker, takeaway, title, le
   let chartImg = null;
   let chartH = 0;
   if (inst) {
-    const url = inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: surface });
+    // Re-draw the chart off-screen at the export width, so the image is crisp and
+    // the labels keep their normal size (scaling the on-screen canvas blurs it).
+    const entry = chartEl.__entry;
+    const onScreen = chartEl.getBoundingClientRect();
+    const aspect = Math.min(0.62, Math.max(0.4, onScreen.height / Math.max(1, onScreen.width)));
+    chartH = Math.round(inner * aspect);
+    let url;
+    if (entry?.build && typeof echarts !== 'undefined') {
+      const tmp = document.createElement('div');
+      Object.assign(tmp.style, { position: 'fixed', left: '-10000px', top: '0', width: `${inner}px`, height: `${chartH}px` });
+      card.append(tmp); // inside the card so section colours (CSS variables) apply
+      const off = echarts.init(tmp, null, { renderer: 'canvas', devicePixelRatio: 2 });
+      off.setOption({ ...entry.build(themeOf(card)), animation: false }, true);
+      url = off.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: surface });
+      off.dispose();
+      tmp.remove();
+    } else {
+      url = inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: surface });
+    }
     chartImg = await loadImage(url);
-    chartH = Math.round((chartImg.height / chartImg.width) * inner);
+    if (!entry?.build) chartH = Math.round((chartImg.height / chartImg.width) * inner);
   }
 
   const headLH = 48;
