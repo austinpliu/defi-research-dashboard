@@ -46,3 +46,32 @@ Choices made while building this unattended, with the reason for each. Newest at
 - **Static site + scheduled GitHub Action, no build step.** Plain HTML/CSS/JavaScript modules, so there is nothing to compile and any static host works.
 - **Two workflows:** `update-data.yml` (every 6 hours at :23 past, the manual "Run workflow" button, and any push that changes `watchlist.json` or the scripts) and `publish-site.yml` (publishes `site/` to GitHub Pages from `main`).
 - **Every push that edits `watchlist.json` refreshes the data**, on any branch, so a new protocol shows up without waiting for the schedule.
+
+## Learned from the live runs
+
+- **DefiLlama free host confirms Pro-only endpoints:** `/raises` and `/emissions` answer HTTP 402 ("Upgrade to the paid API plan"). `/hacks` is free and works (1,300+ incidents); hacks are matched to protocols by DefiLlama protocol id, not just name.
+- **Some parent protocols have no combined TVL** (Ondo Finance and Centrifuge returned an empty `tvl` series). The script first adds up the parent's per-chain series, then its sub-protocols' own series, and the page says which it did. If neither has data, the TVL section says "unavailable" with that reason.
+- **Parents carry no category or chain list**, so the script takes the category with the most TVL among the parent's children, and the union of their chains.
+- **CoinGecko renames migrated tokens "[OLD]".** `centrifuge` is "Centrifuge [OLD]"; DefiLlama's id `centrifuge-2` is the live CFG token. The watchlist now uses `centrifuge-2`, and the script switches to DefiLlama's id automatically (with a warning) if it meets an "[OLD]" token again.
+- **GeckoTerminal rate-limited** (HTTP 429) even at one call per 2.3 s, so DEX pools now come from DexScreener first (300 calls/min) and GeckoTerminal only covers chains DexScreener doesn't (e.g. Hyperliquid's own chain), at one call per 3.5 s. At most 3 chains per token are searched (Ethereum first), and the page lists which ones.
+- **Snapshot space ids from DefiLlama can be stale.** `aave.eth` returned no proposals and no space record. The script now asks the hub which configured spaces exist and lists unknown ones on the Sources page. `aavedao.eth` is in `watchlist.json` as a candidate for Aave; if it doesn't exist either, the Sources page will say so.
+- **Snapshot coverage is thin for this watchlist.** Only Compound and Morpho (peers) have active Snapshot spaces in the data. Aave, Sky and others mostly vote on-chain, and no keyless API for on-chain governance was found (Tally needs a key). Governance forum RSS feeds (Aave, Sky, Maple, Centrifuge) fill the gap in Catalysts.
+- **Ondo has no governance forum at forum.ondo.foundation** (DNS doesn't resolve), so that feed was removed.
+- **Bridges are excluded from category totals and movers.** DefiLlama's protocol list includes Bridge and Canonical Bridge entries (about $74B) whose assets are already counted on the chains they bridge to; DefiLlama's headline TVL leaves them out too. They stay in the Screener, where you can filter by category.
+- **The "launch / upgrade" label** is a keyword rule on headlines (launch, upgrade, mainnet, migration, deploy, goes live, release…). Version numbers like "V3" no longer count, because "Risk Stewards: cap changes on Aave V3" isn't a launch.
+- **Fee "vs prior 30 days" changes:** DefiLlama's per-protocol summary often omits them, so they are calculated from the same daily series and the tile says "(calc.)".
+- **DefiLlama stablecoin page links** use the slugified coin name (`/stablecoin/sky-dollar`); the gecko id (`/stablecoin/usds`) 404s. Verified with the link checker.
+- **Some DefiLlama yield-pool pages 404** even though the pool is in the live API (about 8 of 120). The API endpoint is cited too, so the number can still be checked.
+- **Link checker:** many sites (DefiLlama, CoinGecko, DexScreener, Etherscan, The Defiant…) sometimes answer automated requests with a bot-check page (HTTP 403 "Just a moment…"). Those links are listed as "check by hand", not "broken". The checker records the page title for links that open, so you can confirm they land on the right protocol.
+
+## Design
+
+- **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.
+- **Section accents:** 01 Overview orange, 02 Protocols yellow, 03 Tokens pink, 04 Compare green, 05 Catalysts purple, 06 Screener blue, 07–08 neutral.
+- **Fonts:** Inter (text) and Inter Tight 700–900 (headlines), self-hosted from the Fontsource npm packages (SIL Open Font License, included), so PNG exports render the same fonts.
+- **Charts:** ECharts 6.1 (Apache-2.0), vendored in `site/vendor/` so the site has no runtime CDN dependency. Hairline horizontal gridlines only, 2 px lines, thin bars with rounded ends, value labels at bar tips and line ends.
+- **Colors for multi-series charts** use a palette that passed a colorblind-safety and contrast validator on both the light and dark backgrounds (worst adjacent-pair CVD ΔE 9.1 light / 8.4 dark). Single-series charts use the section accent. Light accents below 3:1 contrast always carry value labels, and every chart has a table view.
+- **Direct labels and legends:** lines are labelled at their ends and bars at their tips. Multi-series charts also keep a small legend row so identity never depends on color alone. That's a small departure from "direct labels instead of legends".
+- **No dual-axis charts.** Price and volume, or TVL and price, are separate charts. Compare uses one axis, either in dollars or with every series rebased to 100 at the start.
+- **"Today in one glance"** at the top of the Overview repeats every chart's generated headline in one numbered list, each jumping to its chart.
+- **Dark mode** follows the operating system by default; the toggle remembers your choice in the browser.

@@ -43,6 +43,10 @@ export async function render(root) {
   );
   root.append(stats);
 
+  // "What the data says today": the headline of every chart below, in one list.
+  const summary = h('section', { class: 'card summary-card', style: { marginTop: '18px' } });
+  root.append(summary);
+
   const grid = h('div', { class: 'grid', style: { marginTop: '18px' } });
   root.append(grid);
 
@@ -265,6 +269,21 @@ export async function render(root) {
       table: () => ({ columns: [{ key: 'category', label: 'Category' }, { key: 'tvl', label: 'TVL', num: true, fmt: (v) => usd(v), csv: (r) => r.tvl }, { key: 'share', label: 'Share', num: true, fmt: (v) => pct(v, { signed: false }) }, { key: 'count', label: 'Protocols', num: true }], rows: m.categories.list }),
     })));
   }
+
+  // ---------- fill the summary panel from the cards' own headlines ----------
+  const cards = [...grid.querySelectorAll('.chart-card')].filter((c) => c.querySelector('.takeaway .hl'));
+  if (cards.length) {
+    summary.append(
+      h('div', { class: 'card-top' }, h('div', { class: 'kicker' }, 'Today in one glance'), h('span', { class: 'src', style: { margin: 0 } }, 'Generated from the charts below by simple rules — click one to jump to its chart')),
+      h('h2', { class: 'takeaway', style: { marginBottom: '10px' } }, 'What the data says today'),
+      h('ol', { class: 'summary-list' }, cards.slice(0, 8).map((c) => {
+        const tk = c.querySelector('.takeaway').cloneNode(true);
+        tk.className = 'summary-take';
+        const btn = h('button', { type: 'button', class: 'summary-item', onclick: () => c.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
+          h('span', { class: 'chip' }, c.querySelector('.kicker')?.textContent || ''), tk);
+        return h('li', {}, btn);
+      })));
+  } else summary.remove();
 
   // ---------- Catalyst preview + headlines ----------
   const cat = files['catalysts.json'].data;

@@ -235,6 +235,7 @@ main { max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter) 64px; }
 
 /* ---------- Section band (opening slide) ---------- */
 .band {
+  isolation: isolate;
   margin: 22px 0 26px; border-radius: 22px; background: var(--band); color: #f4f1e8; position: relative; overflow: hidden;
   padding: clamp(22px, 3.2vw, 40px) clamp(20px, 3.2vw, 44px); min-height: clamp(170px, 20vw, 250px);
   display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 18px;
@@ -542,3 +543,13 @@ footer.site a { color: var(--ink-2); }
   .band-num span { font-size: 92px; }
   .band-title { margin-top: 8px; }
 }
+
+/* home summary panel */
+.summary-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 22px; counter-reset: s; }
+@media (max-width: 900px) { .summary-list { grid-template-columns: 1fr; } }
+.summary-item { all: unset; cursor: pointer; display: grid; grid-template-columns: 26px 1fr; gap: 4px 10px; align-items: start; padding: 9px 4px; border-radius: 10px; width: 100%; box-sizing: border-box; }
+.summary-item::before { counter-increment: s; content: counter(s, decimal-leading-zero); font: 900 15px/1.5 var(--font-head); color: var(--muted); grid-row: span 2; }
+.summary-item:hover, .summary-item:focus-visible { background: var(--surface-2); }
+.summary-item .chip { justify-self: start; }
+.summary-take { font: 700 16px/1.35 var(--font-head); margin: 0; letter-spacing: -0.005em; }
+.summary-take .hl { padding: 0 0.1em; }
