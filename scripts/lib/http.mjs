@@ -38,10 +38,28 @@ class HostGate {
 }
 
 export class Http {
-  constructor({ verbose = true } = {}) {
+  /**
+   * budgetMs: overall time budget for the run; once spent, new requests are
+   * skipped (and reported) so a slow or rate-limiting API can't stall the job.
+   * tripAfter: after this many requests to one host in a row end in HTTP 429
+   * (even after retries), further requests to that host are skipped this run.
+   */
+  constructor({ verbose = true, budgetMs = Infinity, tripAfter = 3 } = {}) {
     this.requests = [];
     this.gates = new Map();
     this.verbose = verbose;
+    this.deadline = Date.now() + budgetMs;
+    this.tripAfter = tripAfter;
+    this.consecutive429 = new Map();
+    this.tripped = new Set();
+  }
+
+  skip(url, method, label, reason) {
+    const fetchedAt = new Date().toISOString();
+    const result = { ok: false, status: 0, data: null, error: reason, url, fetchedAt, ms: 0, bytes: 0, attempts: 0, label, method, skipped: true };
+    this.requests.push({ label, method, url, status: 0, ok: false, error: reason, fetchedAt, ms: 0, bytes: 0, attempts: 0, skipped: true });
+    if (this.verbose) console.log(`- ${method} skip ${url}  → ${reason}`);
+    return result;
   }
 
   configureHost(host, opts) {
@@ -71,6 +89,8 @@ export class Http {
       label = '',
     } = opts;
     const host = new URL(url).host;
+    if (this.tripped.has(host)) return this.skip(url, method, label, `Skipped: ${host} kept answering HTTP 429 (rate limited) earlier in this run`);
+    if (Date.now() > this.deadline) return this.skip(url, method, label, 'Skipped: the run reached its time budget');
     const gate = this.gateFor(host);
     let attempt = 0;
     let result;
@@ -140,7 +160,8 @@ export class Http {
       }
 
       const retryable = !result.ok && (status === 0 || status === 429 || status >= 500);
-      if (retryable && attempt <= retries) {
+      const timeLeft = this.deadline - Date.now();
+      if (retryable && attempt <= retries && timeLeft > 30000) {
         const wait = process.env.HTTP_NO_PACING === '1' ? 0 : Math.min(retryAfterMs ?? backoffMs * 2 ** (attempt - 1), 90000);
         if (this.verbose) console.log(`  ↻ retry ${attempt}/${retries} in ${Math.round(wait / 1000)}s: ${result.error} — ${url}`);
         await sleep(wait);
@@ -149,6 +170,16 @@ export class Http {
       break;
     }
 
+    if (result.status === 429) {
+      const n = (this.consecutive429.get(host) || 0) + 1;
+      this.consecutive429.set(host, n);
+      if (n >= this.tripAfter && !this.tripped.has(host)) {
+        this.tripped.add(host);
+        if (this.verbose) console.log(`!! ${host} rate-limited ${n} requests in a row; skipping it for the rest of this run`);
+      }
+    } else {
+      this.consecutive429.set(host, 0);
+    }
     result.attempts = attempt;
     result.label = label;
     result.method = method;

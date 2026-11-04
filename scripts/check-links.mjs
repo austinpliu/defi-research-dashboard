@@ -66,7 +66,10 @@ async function main() {
     if (!urls.has(u)) urls.set(u, new Set(['screener.json (row link)']));
   }
 
-  const http = new Http({ verbose: false });
+  // API endpoints were already fetched by fetch-data.mjs; reuse those results.
+  const meta = readJSON(join(OUT, 'meta.json'));
+  const fetched = new Map((meta?.requests || []).map((r) => [r.url, r]));
+  const http = new Http({ verbose: false, budgetMs: Number(process.env.LINK_BUDGET_MIN || 12) * 60e3 });
   const list = [...urls.entries()].slice(0, MAX_LINKS);
   const results = [];
   let i = 0;
@@ -76,6 +79,11 @@ async function main() {
       const host = new URL(url).host;
       if (SKIP_HOSTS.some((re) => re.test(host))) {
         results.push({ url, where: [...where], ok: null, status: null, note: 'Not checked automatically (site blocks bots) — open it by hand' });
+        continue;
+      }
+      if (fetched.has(url)) {
+        const f = fetched.get(url);
+        results.push({ url, where: [...where].slice(0, 5), ok: f.ok, status: f.status, kind: 'api', error: f.ok ? undefined : f.error, checkedAt: f.fetchedAt, note: 'Checked during the data fetch' });
         continue;
       }
       if (url.includes('hub.snapshot.org/graphql')) {

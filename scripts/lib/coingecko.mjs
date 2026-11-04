@@ -10,11 +10,11 @@ export const CG = { api: 'https://api.coingecko.com/api/v3', site: 'https://www.
 export async function fetchCoinRaw(http, id) {
   const coin = await http.json(
     `${CG.api}/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`,
-    { label: `CoinGecko coin ${id}`, retries: 3, backoffMs: 20000 }
+    { label: `CoinGecko coin ${id}`, retries: 2, backoffMs: 15000 }
   );
   const chart = await http.json(
     `${CG.api}/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=365&interval=daily`,
-    { label: `CoinGecko 1y market chart ${id}`, retries: 3, backoffMs: 20000 }
+    { label: `CoinGecko 1y market chart ${id}`, retries: 2, backoffMs: 15000 }
   );
   return { coin, chart };
 }

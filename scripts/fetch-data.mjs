@@ -115,7 +115,9 @@ async function main() {
     return true;
   });
 
-  const http = new Http();
+  // 22-minute budget: GitHub kills the job at 40 minutes, and a partial,
+  // honestly-labelled update is better than none.
+  const http = new Http({ budgetMs: Number(process.env.FETCH_BUDGET_MIN || 22) * 60e3 });
   http.configureHost('api.llama.fi', { minIntervalMs: 300, concurrency: 3 });
   http.configureHost('stablecoins.llama.fi', { minIntervalMs: 300, concurrency: 2 });
   http.configureHost('yields.llama.fi', { minIntervalMs: 300, concurrency: 1 });
