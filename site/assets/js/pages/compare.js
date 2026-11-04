@@ -42,7 +42,7 @@ export async function render(root, { query }) {
   let mode = query.get('mode') === 'abs' ? 'abs' : 'index';
   let range = [90, 365].includes(Number(query.get('range'))) ? Number(query.get('range')) : 365;
 
-  root.append(band({ n: '04', tag: 'Section 04 · Compare', title: 'Side by side', sub: 'Pick 2 to 5 protocols. Overlay their TVL, fees, revenue, token price or market cap, and compare valuation metrics in one table. The link in your address bar saves this view.' }));
+  root.append(band({ n: '04', tag: 'Section 04 · Compare', title: 'Side by side', sub: 'Pick 2 to 5 protocols (each with its token). Overlay their TVL, fees, revenue, token price or market cap, and compare valuation metrics in one table. The link in your address bar saves this view.' }));
 
   const picker = h('div', { class: 'picker', role: 'group', 'aria-label': 'Protocols to compare' });
   const controls = h('div', { class: 'filters stacked' },
@@ -69,7 +69,7 @@ export async function render(root, { query }) {
     picker.replaceChildren(...all.map((p) => {
       const on = ids.includes(p.slug);
       const b = h('button', { type: 'button', 'aria-pressed': String(on), disabled: !on && ids.length >= 5, title: !on && ids.length >= 5 ? 'Up to 5 at a time' : p.group === 'peer' ? 'Peer (not in your watchlist)' : 'Watchlist' },
-        h('span', { class: 'sw', style: { background: on ? t.s[slotOf.get(p.slug) % 8] : null } }), p.name, p.group === 'peer' ? h('span', { class: 'sub' }, ' peer') : null);
+        h('span', { class: 'sw', style: { background: on ? t.s[slotOf.get(p.slug) % 8] : null } }), p.name, p.symbol ? h('span', { class: 'sub', style: { opacity: 0.75 } }, ` · ${p.symbol}`) : null, p.group === 'peer' ? h('span', { class: 'sub' }, ' (peer)') : null);
       b.addEventListener('click', () => {
         if (on && ids.length <= 2) return; // keep at least two
         ids = on ? ids.filter((x) => x !== p.slug) : [...ids, p.slug];
