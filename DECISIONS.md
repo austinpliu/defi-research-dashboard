@@ -186,6 +186,14 @@ A research aid, not a rating or a buy signal. Each check says how the data compa
   - **Statuses:** the price ahead by more than `narrative.aheadPts` → ✗. Revenue ahead by more than `narrative.lagPts` → ✓ ("possibly overlooked"). Anything else → ~.
   - 30-day changes are shown too.
   - An incomplete or zero earlier window → "no data", because a % change from zero is meaningless.
+- **No overall score.** The overview shows the seven statuses side by side and never adds them up. A total would turn a research aid into a rating.
+- **Charts without dual axes:**
+  - "Market cap vs revenue" is drawn as a single ratio line: market cap ÷ rolling 30-day annualized revenue.
+  - "Price vs revenue" puts price and rolling 30-day revenue on one axis, both indexed to 100.
+  - Supply is a bar chart in tokens: circulating, total, max, and unlocks in the next 12 months when their size is known.
+- **Deep links use query parameters** (`?check=supply`, `?how=1`), because the site's router owns the `#` part of the URL.
+- **"New note from this checklist"** uses the notes workspace's quick capture: an Inbox note with every status, number and source link, a link back to the page, and an empty "My take" section.
+- **Nav:** Fundamentals sits after Screener, ahead of the reference pages, but its section number is 10 because it was added last.
 - **Overview takeaway:** names the protocol returning the most holders revenue relative to its market cap (annualized holders revenue ÷ market cap), and how many send none. Two protocols tie when their yields are equal at one decimal, as shown.
 
 ## Design

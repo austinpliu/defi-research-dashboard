@@ -118,7 +118,8 @@ export function worstRetention(series) {
 }
 
 // ---------- the checks ----------
-const N = (label, value, unit, src, note) => ({ label, value: isNum(value) || typeof value === 'string' ? value : null, unit, src: src || null, ...(note ? { note } : {}) });
+// src: the key (or keys, for a calculated number) of the source records in p.sources; links: extra http(s) links (hand-entered entries)
+const N = (label, value, unit, src, note, links) => ({ label, value: isNum(value) || typeof value === 'string' ? value : null, unit, src: (Array.isArray(src) ? src.filter(Boolean) : src) || null, ...(note ? { note } : {}), ...(links?.length ? { links } : {}) });
 const result = (status, why, numbers = [], extra = {}) => ({ status, why, numbers, ...extra });
 const annual = (x) => (isNum(x) ? (x * 365) / 30 : null);
 
@@ -132,7 +133,7 @@ function holdersCheck(p, T) {
     N('Holders revenue, 30 days', hr30, 'usd', p.holdersRevenue?.src),
     N('Holders revenue, annualized', annual(hr30), 'usd', p.holdersRevenue?.src, 'last 30 days × 365 ÷ 30'),
     N('Revenue, 30 days', rev30, 'usd', p.revenue?.src),
-    N('Holders’ share of revenue', share, 'pct', p.holdersRevenue?.src),
+    N('Holders’ share of revenue', share, 'pct', [p.holdersRevenue?.src, p.revenue?.src], 'holders revenue ÷ revenue, last 30 days'),
     N('Holders revenue trend (last 30 days vs 60–90 days ago)', trend, 'pctChange', p.holdersRevenue?.src),
     N('Token incentives vs holders revenue', p.incentives?.unavailable ? 'no data' : null, 'text', p.incentives?.src, p.incentives?.unavailable || null),
   ];
@@ -156,9 +157,9 @@ function sizeCheck(p, T) {
   const numbers = [
     N('Revenue, annualized', annRev, 'usd', p.revenue?.src, 'last 30 days × 365 ÷ 30'),
     N('Market cap', mcap, 'usd', p.market?.src),
-    N('Market cap ÷ revenue', pe, 'x', p.market?.src, 'like a price-to-earnings ratio'),
+    N('Market cap ÷ revenue', pe, 'x', [p.market?.src, p.revenue?.src], 'market cap ÷ annualized revenue, like a price-to-earnings ratio'),
     N('TVL', p.tvl?.value, 'usd', p.tvl?.src),
-    N('Revenue as % of TVL (yearly)', revToTvl, 'pct', p.tvl?.src),
+    N('Revenue as % of TVL (yearly)', revToTvl, 'pct', [p.revenue?.src, p.tvl?.src], 'annualized revenue ÷ TVL; context only'),
   ];
   const extra = { pe, revToTvl, annRev };
   if (!isNum(mcap)) return result('nodata', p.market?.unavailable ? `No market cap: ${p.market.unavailable}.` : 'No market cap for the token.', numbers, extra);
@@ -176,8 +177,8 @@ function callCheck(p, T, holders, ctx) {
   const plans = (ctx.valueAccrual || []).filter((e) => e.token === p.tokenId || e.protocol === p.slug);
   const numbers = [
     N('Revenue, annualized', annRev, 'usd', p.revenue?.src),
-    N('Holders’ share of revenue', share, 'pct', p.holdersRevenue?.src),
-    ...plans.map((e) => N('Announced', e.what, 'text', null, `${e.date || 'undated'} · last checked ${e.lastChecked || '—'}`)),
+    N('Holders’ share of revenue', share, 'pct', [p.holdersRevenue?.src, p.revenue?.src]),
+    ...plans.map((e) => N(`Announced${e.status ? ` (${e.status})` : ''}`, e.what, 'text', null, `${e.date || 'undated'} · last checked ${e.lastChecked || '—'}`, [e.source])),
   ];
   const extra = { plans };
   if (!isNum(annRev)) return result('nodata', 'Needs revenue data to judge.', numbers, extra);
@@ -202,9 +203,9 @@ function supplyCheck(p, T) {
   const numbers = [
     N('Circulating supply', circ, 'tokens', s.src),
     N('Max supply', max ?? (s.maxInfinite ? 'no cap' : null), max ? 'tokens' : 'text', s.src),
-    N('Circulating, % of max', circShare, 'pct', s.src),
+    N('Circulating, % of max', circShare, 'pct', s.src, 'circulating ÷ max supply'),
     N('Market cap ÷ fully diluted value', mcapFdv, 'pct', p.market?.src),
-    N('Unlocks in the next 12 months, % of circulating', unlockShare, 'pct', unl.src, unl.status === 'unconfirmed' ? 'schedule unconfirmed' : unl.next12mUnknown ? `${unl.next12mUnknown} release(s) of unpublished size not counted` : null),
+    N('Unlocks in the next 12 months, % of circulating', unlockShare, 'pct', [unl.src, s.src], unl.status === 'unconfirmed' ? 'schedule unconfirmed' : unl.next12mUnknown ? `${unl.next12mUnknown} release(s) of unpublished size not counted` : null),
     N('Most that could ever unlock, % of circulating', ceiling, 'pct', s.src, 'max supply minus circulating'),
     N(`Traded within a ${T['supply.rangeBand']}× band for`, range ? range.years : null, 'years', p.priceWeeklySrc, range ? `${range.wholeHistory ? 'the whole history shown, ' : ''}weekly price ${fmtPrice(range.low)}–${fmtPrice(range.high)}` : 'no weekly price history'),
   ];
@@ -230,7 +231,7 @@ function liquidityCheck(p, T) {
   const volShare = isNum(vol) && isNum(mcap) && mcap > 0 ? (vol / mcap) * 100 : null;
   const numbers = [
     N('DEX liquidity', liq, 'usd', p.dex?.src, isNum(p.dex?.pools) ? `${p.dex.pools} pools found` : null),
-    N('DEX liquidity, % of market cap', liqShare, 'pct', p.dex?.src),
+    N('DEX liquidity, % of market cap', liqShare, 'pct', [p.dex?.src, p.market?.src]),
     N('24h volume (all exchanges)', vol, 'usd', p.market?.src),
     N('24h volume, % of market cap', volShare, 'pct', p.market?.src),
   ];
@@ -260,7 +261,7 @@ function trackCheck(p, T, ctx) {
     N('TVL kept at its worst drawdown', worst ? worst.ratio * 100 : null, 'pct', tvl.src, worst ? `low in ${fmtMonth(worst.ts)}, monthly data` : null),
     N('Hacks recorded', hacks.length, 'count', p.hacks?.src),
     N('Net hack losses (not returned)', hacks.length ? netLoss : 0, 'usd', p.hacks?.src),
-    ...(team ? [N('Team background', team.text, 'text', null, team.sources?.length ? `${team.sources.length} source link(s)` : null)] : []),
+    ...(team ? [N('Team background', team.text, 'text', null, `your note${team.lastChecked ? `, last checked ${team.lastChecked}` : ''}; context only`, team.sources)] : []),
   ];
   const extra = { years, worst, netLoss, team };
   if (!isNum(years) || !tvl.monthly?.length) return result('nodata', tvl.unavailable || 'No TVL history to judge a track record.', numbers, extra);
@@ -282,7 +283,7 @@ function narrativeCheck(p, T) {
     N('Revenue change, 30 days vs the 30 before', r30, 'pctChange', p.revenue?.src),
     N('Price change, 90 days', p90, 'pctChange', p.seriesSrc),
     N('Revenue change, 90 days vs the 90 before', r90, 'pctChange', p.revenue?.src),
-    N('Price minus revenue change, 90 days', gap, 'pts', null),
+    N('Price minus revenue change, 90 days', gap, 'pts', [p.seriesSrc, p.revenue?.src], 'percentage points'),
   ];
   const extra = { r30, r90, p30, p90, gap };
   if (!isNum(p90)) return result('nodata', 'No 90-day price history.', numbers, extra);

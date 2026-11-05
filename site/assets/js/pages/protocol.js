@@ -11,6 +11,7 @@ import {
 } from '../takeaways.js';
 import { unlocksBlock } from '../unlocks.js';
 import { notesCard } from '../notes/panel.js';
+import { checklistCard } from '../fundamentals/view.js';
 
 export async function render(root, { params }) {
   const slug = params[0];
@@ -62,6 +63,7 @@ export async function render(root, { params }) {
     sourceLine([S['dl-protocol'], d.token?.description ? S['cg-coin'] : null, L.docs ? { name: 'watchlist.json', label: 'docs link entered by hand', ok: true } : null].filter(Boolean), { sources: S }));
   root.append(profile);
   root.append(h('div', { style: { marginTop: '18px' } }, notesCard({ kind: 'protocol', name, symbol: sym, slug, tokenId: d.token?.id || null })));
+  root.append(h('div', { style: { marginTop: '18px' } }, checklistCard({ slug, tokenId: d.token?.id || null })));
 
   // ---------- stat strip ----------
   const T = d.tvl || {};

@@ -28,7 +28,11 @@ _Updated as work happens. Last update: 5 Nov 2026 (session: category double coun
 - **Fundamentals Checklist (Nov 2026, in progress on `claude/fundamentals-checklist`):**
   - **Stage 1 done:** the pipeline writes `site/data/fundamentals.json` with each protocol's inputs and sources, plus 5 years of weekly prices from DefiLlama's coins API.
   - **Stage 2 done:** the rules engine (`site/assets/js/fundamentals/rules.js`), the thresholds config, and the empty hand-edited `value-accrual.json` and `team-notes.json`. 31 unit tests cover every rule, empty data, zero revenue, ties and threshold validation (107 tests in all).
-  - **Next:** the page and detail views (stage 3), the settings panel with sync (stage 4), and smoke tests and docs (stage 5).
+  - **Stage 3 done:** the Fundamentals section (`#/fundamentals`), labelled as a research aid throughout.
+    - **Overview:** a sortable, filterable table with the checks as columns, a takeaway headline, and a "How this works" panel that renders every rule and threshold from the config.
+    - **Detail page:** one per protocol (`#/fundamentals/<slug>`), with seven check cards (status, sentence, numbers, source links) and four charts, each with PNG, Table and CSV.
+    - **Elsewhere:** a compact card on protocol and token pages, the "New note from this checklist" button, and six new glossary entries.
+  - **Next:** the settings panel with sync (stage 4), and smoke tests and docs (stage 5).
 
 ## Not done / known gaps
 - **Notes, not yet:**
