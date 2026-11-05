@@ -19,6 +19,7 @@ import { fetchNetworkMap, fetchTokenPools } from './lib/dex.mjs';
 import { spacesFromSources, fetchProposals } from './lib/governance.mjs';
 import { fetchFeed, feedItems } from './lib/feeds.mjs';
 import { fetchCoinMarkets, buildCoinRows, fetchPredictionEvents, buildPredictionEvents, predictionProtocols } from './lib/markets.mjs';
+import { probeEmissionsRepo, EMISSIONS_REPO } from './lib/unlocks.mjs';
 import { sourceRecord, derivedRecord, carryForward } from './lib/sources.mjs';
 import { roundSmart, num, slugify, normSeries, dailySeries, trimDays, compactSeries } from './lib/util.mjs';
 
@@ -409,7 +410,16 @@ async function main() {
   const seen = new Set();
   feedItemsAll = feedItemsAll.filter((i) => (seen.has(i.url) ? false : (seen.add(i.url), true)));
 
-  // 7. Unlocks (only if DefiLlama's emissions endpoint answers on the free host) ---
+  // 7. Unlocks ------------------------------------------------------------------
+  // Route 1: DefiLlama's open-source emissions adapters, if the repo is publicly cloneable.
+  const unlockNames = protocols.flatMap((p) => [p.entry.defillama, p.token?.id, p.entry.symbol, String(p.entry.name).split(' ')[0]]).filter(Boolean);
+  const ea = await probeEmissionsRepo({ names: unlockNames, printFiles: PROBE });
+  console.log(ea.ok ? `   ✓ emissions-adapters is public (${ea.sha}); ${ea.protocolCount} protocol files; matching: ${ea.files.join(', ') || 'none'}` : `   ✗ emissions-adapters: ${ea.error}`);
+  catSources['emissions-adapters'] = {
+    name: 'DefiLlama emissions-adapters', label: 'Open-source unlock schedules (GitHub)', page: EMISSIONS_REPO, api: null,
+    fetchedAt: ea.fetchedAt, ok: ea.ok, status: null, error: ea.ok ? null : `Repository not publicly cloneable: ${ea.error}`,
+  };
+  // DefiLlama's own emissions API (paid-only on the free host; asked once per run in case that changes)
   const unlockNote = raw.emissions.ok
     ? null
     : `Unlock schedules unavailable: DefiLlama serves them only on its paid Pro API, and no free keyless source was found (${raw.emissions.error}).`;

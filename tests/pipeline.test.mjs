@@ -16,7 +16,7 @@ test('pipeline writes every file with sources and handles failures honestly', ()
   try {
     execFileSync(process.execPath, ['--import', './tests/fixtures/stub-fetch.mjs', 'scripts/fetch-data.mjs'], {
       cwd: ROOT,
-      env: { ...process.env, DATA_OUT_DIR: out, WATCHLIST_FILE: 'tests/fixtures/watchlist.test.json', HTTP_NO_PACING: '1', PROBE: '0' },
+      env: { ...process.env, DATA_OUT_DIR: out, WATCHLIST_FILE: 'tests/fixtures/watchlist.test.json', HTTP_NO_PACING: '1', PROBE: '0', UNLOCKS_REPO_PROBE: '0' },
       stdio: 'pipe',
     });
     const read = (f) => JSON.parse(readFileSync(join(out, f), 'utf8'));
