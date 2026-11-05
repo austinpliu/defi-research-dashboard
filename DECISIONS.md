@@ -194,6 +194,25 @@ A research aid, not a rating or a buy signal. Each check says how the data compa
 - **Deep links use query parameters** (`?check=supply`, `?how=1`), because the site's router owns the `#` part of the URL.
 - **"New note from this checklist"** uses the notes workspace's quick capture: an Inbox note with every status, number and source link, a link back to the page, and an empty "My take" section.
 - **Nav:** Fundamentals sits after Screener, ahead of the reference pages, but its section number is 10 because it was added last.
+- **Settings: defaults vs yours.**
+  - The public files in `site/config/` are the defaults. Your edits are stored as overrides on top of them, so they apply to you only:
+    - thresholds you changed;
+    - entries you added or edited, by id;
+    - ids of default entries you deleted.
+  - So an entry added to the public file later still shows up for you, unless you deleted it.
+  - An empty threshold field, or one set back to its default, removes the override.
+- **Settings validation:** threshold edits apply as you type, but an impossible value is never saved. Impossible means not a number, negative, out of bounds, or a ✓ cutoff no stronger than the ✗ one. The checklist keeps the last good value, the field shows why, and the live preview shows the default there.
+  - Value-accrual entries need a protocol, a one-sentence description, an http(s) source and a "last checked" date. Team notes need text, at least one http(s) source and a date.
+  - A stored entry that fails validation is skipped, with a message, instead of breaking the page.
+  - A settings file that can't be read falls back to the defaults and says so. The file itself is kept untouched until you save.
+- **Settings storage and sync:**
+  - **Where it's stored:** one JSON file, `.dashboard/fundamentals-settings.json`, kept in the notes store's IndexedDB `meta` table (under `sys:`), not with the notes. The notes tree, search, graph, links, backlinks and the zip export never see it. Settings have their own Export and Import.
+  - **Sync:** notes sync also lists and uploads `.dashboard/*.json` in the same private repo, with the same token, the same `sha` checks and the same three-way plan.
+  - **Conflicts:** when both sides changed the file, it is merged by content, per threshold and per entry id, against the version both last agreed on (fetched from git by its blob hash). One-sided changes combine.
+    - If both changed the same setting, your value is kept. The other device's value is saved in `.dashboard/conflicts/…json`, on both sides, and the Settings page offers "Use theirs" for each one.
+    - Nothing is overwritten without a record. The merge is unit-tested, and tested end to end against a fake GitHub.
+  - **Sync off:** settings save in this browser only, and the Settings page says so, with a button to set up sync.
+- **Import replaces your settings only after a confirmation** that says what's in the file and how many values in it are invalid. Export writes only your overrides, not the defaults.
 - **Overview takeaway:** names the protocol returning the most holders revenue relative to its market cap (annualized holders revenue ÷ market cap), and how many send none. Two protocols tie when their yields are equal at one decimal, as shown.
 
 ## Design

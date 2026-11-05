@@ -99,3 +99,9 @@ a.fc-cell:hover .fc-st { outline: 2px solid var(--border-strong); }
   .fc-nums thead th:nth-child(1) { width: 44%; }
   .fc-why { font-size: 15px; }
 }
+.fc-preview { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fc-preview th, .fc-preview td { text-align: left; padding: 6px 8px 6px 0; border-top: 1px solid var(--grid); vertical-align: middle; }
+.fc-preview thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border-top: 0; vertical-align: bottom; min-width: 74px; }
+.fc-preview tbody th { white-space: nowrap; font-weight: 600; }
+.fc-preview td.fc-diff .fc-st { outline: 2px solid var(--ink); outline-offset: 1px; }
+.fc-tag[hidden], .fs-err[hidden] { display: none; }

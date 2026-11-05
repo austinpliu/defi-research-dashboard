@@ -126,3 +126,26 @@ export function mergeSettings(base, mine, theirs) {
   };
   return { merged: { version: 1, thresholds, valueAccrual: list('valueAccrual'), teamNotes: list('teamNotes') }, conflicts };
 }
+
+/**
+ * Read an exported settings file. Returns { user, problems } where problems are plain sentences;
+ * a file that isn't settings at all gives user = null. Invalid parts are reported, not thrown.
+ */
+export function parseImport(text) {
+  let obj;
+  try { obj = JSON.parse(text); } catch { return { user: null, problems: ['That file isn’t valid JSON.'] }; }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { user: null, problems: ['That file doesn’t contain checklist settings.'] };
+  if (obj.kind && obj.kind !== 'defi-dashboard/fundamentals-settings') return { user: null, problems: [`That file is “${obj.kind}”, not checklist settings.`] };
+  if (!('thresholds' in obj) && !('valueAccrual' in obj) && !('teamNotes' in obj)) return { user: null, problems: ['That file doesn’t contain checklist settings.'] };
+  const problems = [];
+  const thresholds = obj.thresholds && typeof obj.thresholds === 'object' && !Array.isArray(obj.thresholds) ? obj.thresholds : {};
+  if (obj.thresholds && thresholds !== obj.thresholds) problems.push('The thresholds part wasn’t readable and was left out.');
+  const list = (x, name) => {
+    if (!x) return { entries: [], deleted: [] };
+    const entries = Array.isArray(x.entries) ? x.entries.filter((e) => e && typeof e === 'object') : [];
+    const deleted = Array.isArray(x.deleted) ? x.deleted.filter((d) => typeof d === 'string') : [];
+    if (!Array.isArray(x.entries) && x.entries !== undefined) problems.push(`The ${name} part wasn’t readable and was left out.`);
+    return { entries, deleted };
+  };
+  return { user: { version: 1, thresholds, valueAccrual: list(obj.valueAccrual, 'value-accrual'), teamNotes: list(obj.teamNotes, 'team notes') }, problems };
+}

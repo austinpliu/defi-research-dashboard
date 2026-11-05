@@ -9,6 +9,7 @@ import * as store from './store.js';
 import { planSync, blobSha, conflictPath } from './sync-plan.js';
 import { setFrontmatter, basename } from './model.js';
 import { stamp } from './workspace.js';
+import { isSystemPath, resolveSystemConflict } from './system-files.js';
 
 const API = 'https://api.github.com';
 const KEY = 'notes-sync';
@@ -83,12 +84,18 @@ async function doSync() {
     const tree = await gh(cfg, `/repos/${cfg.repo}/git/trees/${encodeURIComponent(cfg.branch)}?recursive=1`, { allow: [404, 409] });
     if (tree.data?.truncated) throw new Error('The repository has too many files for one listing; keep notes in their own repository.');
     for (const e of tree.data?.tree || []) {
-      if (e.type !== 'blob' || !/\.md$/i.test(e.path) || (prefix && !e.path.startsWith(prefix))) continue;
-      remote.set(e.path.slice(prefix.length), e.sha);
+      if (e.type !== 'blob' || (prefix && !e.path.startsWith(prefix))) continue;
+      const rel = e.path.slice(prefix.length);
+      if (/\.md$/i.test(rel) || isSystemPath(rel)) remote.set(rel, e.sha); // notes, plus .dashboard/ settings files
     }
     // 2. what's here, and what both had last time
     const local = new Map();
     for (const n of store.allNotes()) local.set(n.path, await blobSha(n.body));
+    for (const f of store.allSystem()) if (isSystemPath(f.path)) local.set(f.path, await blobSha(f.body));
+    // system files (dashboard settings) live outside the notes; these route reads and writes
+    const readLocal = (p) => (isSystemPath(p) ? store.getSystem(p) : store.getNote(p));
+    const writeLocal = (p, body) => (isSystemPath(p) ? store.putSystem(p, body) : store.putRaw([{ path: p, body, updated: Date.now() }]));
+    const deleteLocal = (p) => (isSystemPath(p) ? store.deleteSystem(p) : store.deleteRaw([p]));
     const base = new Map(Object.entries(store.getMeta(baseKey(cfg), {}) || {}));
     const plan = planSync(local, remote, base);
     const next = new Map(base);
@@ -101,10 +108,10 @@ async function doSync() {
       if (a.action === 'adopt') { next.set(a.path, a.localSha); continue; }
       if (a.action === 'pull') {
         const text = await getRemote(a.remoteSha);
-        await store.putRaw([{ path: a.path, body: text, updated: Date.now() }]);
+        await writeLocal(a.path, text);
         next.set(a.path, a.remoteSha); summary.pulled += 1;
       } else if (a.action === 'push') {
-        const n = store.getNote(a.path);
+        const n = readLocal(a.path);
         const sha = await put(a.path, n.body, a.remoteSha);
         next.set(a.path, sha); summary.pushed += 1;
       } else if (a.action === 'delete-remote') {
@@ -112,9 +119,28 @@ async function doSync() {
         next.delete(a.path); summary.deletedRemote += 1;
       } else if (a.action === 'delete-local') {
         // only if it is still exactly what we last synced (checked against the plan's hash)
-        const n = store.getNote(a.path);
-        if (n && await blobSha(n.body) === a.localSha) { await store.deleteRaw([a.path]); summary.deletedLocal += 1; }
+        const n = readLocal(a.path);
+        if (n && await blobSha(n.body) === a.localSha) { await deleteLocal(a.path); summary.deletedLocal += 1; }
         next.delete(a.path);
+      } else if (a.action === 'conflict' && isSystemPath(a.path)) {
+        // a settings file changed on both sides: merge the two by content (three-way, using the
+        // version both last agreed on). Where both changed the same setting, yours is kept and
+        // the other device's value is saved in .dashboard/conflicts/ for you to review.
+        const theirs = await getRemote(a.remoteSha);
+        const baseSha = base.get(a.path);
+        let baseText = null;
+        if (baseSha) { try { baseText = await getRemote(baseSha); } catch { baseText = null; } }
+        const mine = readLocal(a.path).body;
+        const res = resolveSystemConflict(a.path, baseText, mine, theirs, stamp(), taken);
+        if (res.conflict) {
+          taken.add(res.conflict.path.toLowerCase());
+          await store.putSystem(res.conflict.path, res.conflict.text);
+          next.set(res.conflict.path, await put(res.conflict.path, res.conflict.text, null));
+          summary.conflicts.push({ path: a.path, copy: res.conflict.path, system: true });
+        }
+        if (res.text !== mine) await store.putSystem(a.path, res.text);
+        next.set(a.path, await put(a.path, res.text, a.remoteSha));
+        if (!res.conflict) summary.merged = (summary.merged || 0) + 1;
       } else if (a.action === 'conflict') {
         // keep both: the repo's version becomes a separate, flagged note on both sides
         const theirs = await getRemote(a.remoteSha);
@@ -132,7 +158,7 @@ async function doSync() {
       await store.setMeta(baseKey(cfg), Object.fromEntries(next)); // progress survives an interrupted run
     }
     const known = store.getMeta('sync-conflicts', []);
-    await store.setMeta('sync-conflicts', [...known, ...summary.conflicts].filter((c) => store.getNote(c.copy)));
+    await store.setMeta('sync-conflicts', [...known, ...summary.conflicts.filter((c) => !c.system)].filter((c) => store.getNote(c.copy)));
     await store.setMeta('sync-last', summary);
     return summary;
   } catch (e) {

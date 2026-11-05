@@ -32,7 +32,13 @@ _Updated as work happens. Last update: 5 Nov 2026 (session: category double coun
     - **Overview:** a sortable, filterable table with the checks as columns, a takeaway headline, and a "How this works" panel that renders every rule and threshold from the config.
     - **Detail page:** one per protocol (`#/fundamentals/<slug>`), with seven check cards (status, sentence, numbers, source links) and four charts, each with PNG, Table and CSV.
     - **Elsewhere:** a compact card on protocol and token pages, the "New note from this checklist" button, and six new glossary entries.
-  - **Next:** the settings panel with sync (stage 4), and smoke tests and docs (stage 5).
+  - **Stage 4 done:** the settings panel (`#/fundamentals/settings`).
+    - **Threshold forms:** label, value, default, explanation, per-field reset and reset all. Invalid values are rejected with a message, and changed values are marked.
+    - **Live preview:** shows which statuses your values change.
+    - **Editors:** value-accrual entries and team notes (add, edit, delete), with http(s) sources required.
+    - **Saving and sync:** export, import and reset. Settings save in the browser and sync through the notes repo, with merge-by-content conflict handling.
+    - **Tests:** 13 new (120 in all).
+  - **Next:** smoke tests, link checks and docs (stage 5).
 
 ## Not done / known gaps
 - **Notes, not yet:**

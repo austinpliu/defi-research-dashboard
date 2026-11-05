@@ -4,6 +4,7 @@ import { usd, pct, ratio, compact } from '../format.js';
 import { CHECKS, STATUS, evaluateAll } from './rules.js';
 import { loadSafe } from '../data.js';
 import { loadDefaults, effective, getUser, onUserChange } from './settings.js';
+import { startSettings, storageError } from './storage.js';
 
 export const STATUS_WORD = { strong: 'strong', mixed: 'mixed', weak: 'weak', nodata: 'no data', na: 'doesn’t apply' };
 export const RESEARCH_AID = 'A research aid, not a rating or a buy signal. Each check compares public data with thresholds you can change; read the numbers and sources before drawing conclusions.';
@@ -93,10 +94,11 @@ export function checklistMarkdown(p, checks, { custom, link }) {
 
 /** Load data + defaults + your settings and evaluate every protocol. */
 export async function loadChecklist() {
-  const [{ data, error }, defaults] = await Promise.all([loadSafe('fundamentals.json'), loadDefaults()]);
+  const [{ data, error }, defaults] = await Promise.all([loadSafe('fundamentals.json'), loadDefaults(), startSettings()]);
   if (!data) return { error };
   if (!defaults.thresholds) return { error: defaults.errors.join(' ') };
   const eff = effective(defaults, getUser());
+  if (storageError()) eff.errors.unshift(storageError());
   const now = Date.parse(data.generatedAt) / 1000 || Date.now() / 1000;
   const rows = evaluateAll(data.protocols, eff.values, { valueAccrual: eff.valueAccrual, teamNotes: eff.teamNotes, now });
   return { data, defaults, eff, rows, now };
