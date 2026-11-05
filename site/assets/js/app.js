@@ -15,6 +15,8 @@ import * as catalysts from './pages/catalysts.js';
 import * as screener from './pages/screener.js';
 import * as glossary from './pages/glossary.js';
 import * as sources from './pages/sources.js';
+import * as notes from './pages/notes.js';
+import { saveAllEditors } from './notes/editor.js';
 
 export const SECTIONS = {
   home: { label: 'Overview', accent: 'orange', n: '01', href: '#/' },
@@ -25,6 +27,7 @@ export const SECTIONS = {
   screener: { label: 'Screener', accent: 'blue', n: '06', href: '#/screener' },
   glossary: { label: 'Glossary', accent: 'gray', n: '07', href: '#/glossary' },
   sources: { label: 'Sources', accent: 'gray', n: '08', href: '#/sources' },
+  notes: { label: 'Notes', accent: 'yellow', n: '09', href: '#/notes' },
 };
 
 const ROUTES = [
@@ -38,6 +41,7 @@ const ROUTES = [
   { re: /^\/screener\/?$/, mod: screener, nav: 'screener' },
   { re: /^\/glossary\/?$/, mod: glossary, nav: 'glossary' },
   { re: /^\/sources\/?$/, mod: sources, nav: 'sources' },
+  { re: /^\/notes(?:\/(.+?))?\/?$/, mod: notes, nav: 'notes' },
 ];
 
 // ---------- theme ----------
@@ -164,6 +168,7 @@ function setupSearch(input, results) {
 // ---------- router ----------
 let renderToken = 0;
 async function route() {
+  saveAllEditors();
   const { path, query } = parseHash();
   const match = ROUTES.map((r) => ({ r, m: path.match(r.re) })).find((x) => x.m);
   const main = document.getElementById('main');
