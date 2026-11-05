@@ -152,7 +152,8 @@ export async function render(root, { query }) {
   const P = predFile.data || {};
   const PS = P.sources || {};
   const ev = P.events || [];
-  const share = (v) => pct(v, { signed: false, digits: 0 });
+  // like Polymarket itself: never round a near-certain outcome up to 100% (or a long shot down to 0%)
+  const share = (v) => (v == null ? '—' : v > 99 ? '>99%' : v < 1 ? '<1%' : pct(v, { signed: false, digits: 0 }));
   const busiest = ev[0];
   const lead = busiest?.leaders?.[0];
   root.append(h('section', { class: 'card acc-purple', style: { marginTop: '24px' } },
