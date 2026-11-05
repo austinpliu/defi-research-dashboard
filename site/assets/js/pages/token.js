@@ -82,7 +82,8 @@ export async function render(root, { params }) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Market cap',
       termKey: 'marketCap',
-      take: trendTakeaway(`${sym} market cap`, se.marketCap),
+      // CoinGecko's chart here covers one year, so its peak is a 1-year high, not a record
+      take: trendTakeaway(`${sym} market cap`, se.marketCap, { span: '1-year' }),
       title: `${sym} market cap, past year`,
       build: lineChart({ series: [{ name: 'Market cap', data: se.marketCap }], area: true }),
       src: S[se.src], sources: S, csvName: `${sym}-market-cap`,

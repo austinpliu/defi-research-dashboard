@@ -132,7 +132,7 @@ export async function render(root) {
     const card = chartCard({
       kicker: 'Chains',
       termKey: 'indexed',
-      take: compareTakeaway(rows, 'TVL', 'the past year'),
+      take: compareTakeaway(rows, 'TVL', 'the past year', { noun: 'chain' }),
       title: 'TVL growth of the five largest chains, indexed to 100 one year ago',
       controls: segmented([{ value: 'index', label: 'Growth (=100)' }, { value: 'usd', label: 'Dollars' }], mode, (v) => { mode = v; card.update({ build: resolved, title: v === 'index' ? 'TVL growth of the five largest chains, indexed to 100 one year ago' : 'TVL of the five largest chains, past year' }); }, 'Units'),
       build: resolved,

@@ -92,8 +92,11 @@ export function allTimeHigh(series) {
   return best ? { value: best[1], ts: best[0] } : null;
 }
 
-/** Sum of the values in the last `days` daily points (inclusive of last). */
-export function sumLastDays(series, days, offsetDays = 0) {
+/**
+ * Sum of the values in the last `days` daily points (inclusive of last). Returns null when
+ * fewer than `minPoints` days have data (default 80%); pass `days` to require a complete window.
+ */
+export function sumLastDays(series, days, offsetDays = 0, minPoints = Math.max(1, Math.floor(days * 0.8))) {
   if (!series.length) return null;
   const end = series[series.length - 1][0] - offsetDays * DAY;
   const start = end - (days - 1) * DAY;
@@ -105,7 +108,7 @@ export function sumLastDays(series, days, offsetDays = 0) {
       n += 1;
     }
   }
-  return n >= Math.max(1, Math.floor(days * 0.8)) ? s : null;
+  return n >= minPoints ? s : null;
 }
 
 /** Keep points newer than `days` ago (relative to the last point). */
@@ -141,10 +144,14 @@ export function stripHtml(html) {
     .trim();
 }
 
+// String.fromCodePoint throws a RangeError above U+10FFFF, and one bad entity in a
+// description would otherwise crash the whole run.
+const codePoint = (n) => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : '�');
+
 export function decodeEntities(s) {
   return String(s)
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => codePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => codePoint(Number(d)))
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')

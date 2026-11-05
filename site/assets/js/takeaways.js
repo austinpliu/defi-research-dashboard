@@ -32,7 +32,7 @@ export function seriesPeak(series) {
  * Trend claim for a stock metric (TVL, supply, price).
  * Priority: record high → big 30-day move → deep drawdown → 1-year change → steady.
  */
-export function trendTakeaway(label, series, { money = true, bigMove = 10, recordWindowDays = 14 } = {}) {
+export function trendTakeaway(label, series, { money = true, bigMove = 10, recordWindowDays = 14, span = null } = {}) {
   const l = last(series);
   if (!l) return null;
   const fmt = (v) => (money ? usd(v) : v.toLocaleString('en-US'));
@@ -40,14 +40,15 @@ export function trendTakeaway(label, series, { money = true, bigMove = 10, recor
   const c30 = seriesChange(series, 30);
   const c365 = seriesChange(series, 365);
   const fromPeak = peak && peak[1] > 0 ? ((l[1] - peak[1]) / peak[1]) * 100 : null;
+  // `span` (e.g. '1-year') when the series is only a window: its peak isn't a record
   if (peak && l[1] >= peak[1] * 0.99 && l[0] - peak[0] <= recordWindowDays * DAY && series.length > 60) {
-    return { pre: `${label} is at a `, hl: 'record high', post: ` of ${fmt(l[1])}` };
+    return { pre: `${label} is at a `, hl: span ? `${span} high` : 'record high', post: ` of ${fmt(l[1])}` };
   }
   if (isNum(c30) && Math.abs(c30) >= bigMove) {
     return { pre: `${label} `, hl: `${c30 > 0 ? 'rose' : 'fell'} ${pct(Math.abs(c30), { signed: false })} in 30 days`, post: `, to ${fmt(l[1])}` };
   }
   if (isNum(fromPeak) && fromPeak <= -40) {
-    return { pre: `${label} is still `, hl: `${pct(Math.abs(fromPeak), { signed: false, digits: 0 })} below its peak`, post: ` from ${monthYear(peak[0])}` };
+    return { pre: `${label} is still `, hl: `${pct(Math.abs(fromPeak), { signed: false, digits: 0 })} below its ${span ? `${span} ` : ''}peak`, post: ` from ${monthYear(peak[0])}` };
   }
   if (isNum(c365) && Math.abs(c365) >= 5) {
     return { pre: `${label} is `, hl: `${c365 > 0 ? 'up' : 'down'} ${pct(Math.abs(c365), { signed: false, digits: 0 })} from a year ago`, post: `, at ${fmt(l[1])}` };
@@ -61,14 +62,20 @@ export function trendTakeaway(label, series, { money = true, bigMove = 10, recor
 /** "Ethereum holds 58% of all DeFi TVL" or the fastest-growing big chain. */
 export function chainTakeaway(chains) {
   if (!chains?.length) return null;
-  const growers = chains.slice(0, 10).filter((c) => isNum(c.change30d)).sort((a, b) => b.change30d - a.change30d);
-  const g = growers[0];
+  // Only the largest chains have a 30-day history (the pipeline fetches six), so the claim
+  // names how many were actually compared: the unbroken run of top chains with data.
+  const compared = [];
+  for (const c of chains.slice(0, 10)) {
+    if (!isNum(c.change30d)) break;
+    compared.push(c);
+  }
+  const g = [...compared].sort((a, b) => b.change30d - a.change30d)[0];
   if (g && g.change30d >= 15 && g !== chains[0]) {
-    return { pre: `${g.name} is the `, hl: 'fastest-growing top-10 chain', post: `, up ${pct(g.change30d, { signed: false })} in 30 days` };
+    return { pre: `${g.name} is the `, hl: compared.length === 10 ? 'fastest-growing top-10 chain' : `fastest-growing of the ${compared.length} largest chains`, post: `, up ${pct(g.change30d, { signed: false })} in 30 days` };
   }
   const top = chains[0];
   if (!isNum(top.share)) return null;
-  if (top.share >= 50) return { pre: `${top.name} still holds `, hl: 'more than half', post: ` of all DeFi TVL (${pct(top.share, { signed: false, digits: 0 })})` };
+  if (top.share > 50) return { pre: `${top.name} still holds `, hl: 'more than half', post: ` of all DeFi TVL (${pct(top.share, { signed: false, digits: 0 })})` };
   return { pre: `${top.name} holds `, hl: `${pct(top.share, { signed: false, digits: 0 })} of all DeFi TVL`, post: '' };
 }
 
@@ -201,7 +208,9 @@ export function liquidityTakeaway(symbol, dex) {
   if (isNum(total) && total > 0 && top.liquidity / total >= 0.5) {
     return { pre: `Most of ${symbol}'s DEX liquidity sits in `, hl: `one ${top.dex || 'DEX'} pool`, post: ` (${top.name}, ${usd(top.liquidity)})` };
   }
-  return { pre: `${symbol} has `, hl: `${usd(total)} of DEX liquidity`, post: ` across the ${dex.pools.length} largest pools` };
+  // totalLiquidity sums every pool found, not just the (up to 15) pools listed
+  const n = dex.poolCount ?? dex.pools.length;
+  return { pre: `${symbol} has `, hl: `${usd(total)} of DEX liquidity`, post: ` across the ${n} pool${n === 1 ? '' : 's'} found` };
 }
 
 export function yieldTakeaway(name, pools) {
@@ -213,20 +222,23 @@ export function yieldTakeaway(name, pools) {
 }
 
 /** Compare view: fastest growth over the selected window. */
-export function compareTakeaway(rows, metricLabel, windowLabel) {
+export function compareTakeaway(rows, metricLabel, windowLabel, { noun = 'protocol' } = {}) {
   const ok = rows.filter((r) => isNum(r.change));
   if (ok.length < 2) return null;
   ok.sort((a, b) => b.change - a.change);
   const a = ok[0];
   const z = ok[ok.length - 1];
   if (a.change > 0) return { pre: `${a.name} grew ${metricLabel} `, hl: `fastest over ${windowLabel} (${pct(a.change, { digits: 0 })})`, post: z.change < 0 ? `, while ${z.name} shrank ${pct(Math.abs(z.change), { signed: false, digits: 0 })}` : '' };
-  return { pre: `Every protocol here lost ${metricLabel} over ${windowLabel}; `, hl: `${z.name} fell most`, post: ` (${pct(z.change, { digits: 0 })})` };
+  // "every … lost" only when the best really fell, and only over the rows that have data
+  if (!(a.change < 0)) return null;
+  const who = ok.length === rows.length ? `Every ${noun} here` : `All ${ok.length} ${noun}s with data`;
+  return { pre: `${who} lost ${metricLabel} over ${windowLabel}; `, hl: `${z.name} fell most`, post: ` (${pct(z.change, { digits: 0 })})` };
 }
 
 export function catalystTakeaway(items, now = Date.now()) {
   const soon = items.filter((i) => i.type === 'governance-vote' && i.status === 'open' && Date.parse(i.date) - now < 7 * 864e5 && Date.parse(i.date) > now);
   if (soon.length >= 2) return { pre: '', hl: `${soon.length} governance votes`, post: ' close in the next 7 days' };
-  if (soon.length === 1) return { pre: 'Next vote to close: ', hl: soon[0].title, post: ` (${soon[0].symbols?.join(', ') || ''})` };
+  if (soon.length === 1) return { pre: 'Next vote to close: ', hl: soon[0].title, post: soon[0].symbols?.length ? ` (${soon[0].symbols.join(', ')})` : '' };
   const upcoming = items.filter((i) => Date.parse(i.date) > now).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
   if (upcoming.length) return { pre: 'Next on the calendar: ', hl: upcoming[0].title, post: '' };
   const recent = items.filter((i) => Date.parse(i.date) <= now && now - Date.parse(i.date) < 7 * 864e5);

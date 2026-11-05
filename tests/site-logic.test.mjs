@@ -154,3 +154,44 @@ test('toCSV quotes commas, quotes and newlines', () => {
   const csv = toCSV([{ label: 'Name', get: (r) => r.n }, { label: 'Value', get: (r) => r.v }], [{ n: 'A, "B"', v: 1 }, { n: 'line\nbreak', v: null }]);
   assert.equal(csv, 'Name,Value\r\n"A, ""B""",1\r\n"line\nbreak",');
 });
+
+// ---- Regression tests for the Nov 2026 review (see REVIEW.md) ----
+
+test('toCSV keeps feed text that starts with = + - @ from running as a formula', () => {
+  const csv = toCSV([{ label: 'Title', get: (r) => r.t }, { label: 'Change', get: (r) => r.c }], [
+    { t: '=HYPERLINK("http://x","click")', c: -5.2 },
+    { t: '+1 vote', c: '-3.5' },
+    { t: '@everyone', c: 0 },
+  ]);
+  assert.equal(csv, 'Title,Change\r\n"\'=HYPERLINK(""http://x"",""click"")",-5.2\r\n\'+1 vote,-3.5\r\n\'@everyone,0');
+});
+
+test('liquidityTakeaway counts every pool in the total, not just the listed ones', () => {
+  const pools = Array.from({ length: 15 }, (_, i) => ({ name: `P${i}`, dex: 'uni', liquidity: 10 - i * 0.5 }));
+  const t = text(liquidityTakeaway('T', { totalLiquidity: 200, poolCount: 71, pools }));
+  assert.match(t, /across the 71 pools found/);
+});
+
+test('chainTakeaway only claims "top-10" when all ten chains were compared', () => {
+  const chains = [{ name: 'Ethereum', share: 54, change30d: -3 }, { name: 'Base', share: 7, change30d: 22 }, { name: 'Solana', share: 6, change30d: 1 }, { name: 'Arbitrum', share: 2 }];
+  assert.match(text(chainTakeaway(chains)), /fastest-growing of the 3 largest chains/);
+  assert.match(text(chainTakeaway([{ name: 'E', share: 50, change30d: 0 }, { name: 'B', share: 10, change30d: 1 }])), /^E holds 50% of all DeFi TVL/);
+});
+
+test('compareTakeaway: no "every … lost" claim when the best was flat or some rows have no data', () => {
+  assert.equal(compareTakeaway([{ name: 'A', change: 0 }, { name: 'B', change: -4 }], 'TVL', 'the past year'), null);
+  assert.match(text(compareTakeaway([{ name: 'A', change: -1 }, { name: 'B', change: -4 }, { name: 'C', change: null }], 'TVL', 'x')), /^All 2 protocols with data lost/);
+  assert.match(text(compareTakeaway([{ name: 'A', change: -1 }, { name: 'B', change: -4 }], 'TVL', 'x', { noun: 'chain' })), /^Every chain here lost/);
+});
+
+test('trendTakeaway on a one-year window says "1-year high", not "record high"', () => {
+  const s = Array.from({ length: 365 }, (_, i) => [T0 + i * DAY, 100 + i]);
+  assert.match(text(trendTakeaway('X market cap', s, { span: '1-year' })), /1-year high/);
+  assert.match(text(trendTakeaway('X TVL', s)), /record high/);
+});
+
+test('catalystTakeaway leaves out empty parentheses when a vote has no symbol', () => {
+  const now = Date.parse('2026-11-04T00:00:00Z');
+  const t = catalystTakeaway([{ type: 'governance-vote', status: 'open', date: '2026-11-06T00:00:00Z', title: 'Vote', symbols: [] }], now);
+  assert.equal(text(t), 'Next vote to close: Vote');
+});

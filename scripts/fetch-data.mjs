@@ -346,8 +346,14 @@ async function main() {
     if (!d.pools.length) t.dex.unavailable = d.attempted.map((a) => `${a.platform}: ${a.error || 'no pools'}`).join('; ') || 'No pools found';
     const prevTok = readJSON(join(OUT, 'tokens', `${t.id}.json`));
     if (!d.pools.length && prevTok?.dex?.pools?.length && prevTok.dex.fetchedAt && Date.now() - Date.parse(prevTok.dex.fetchedAt) < 48 * 36e5) {
-      t.dex = { ...prevTok.dex, stale: { lastGoodAt: prevTok.dex.fetchedAt, reason: t.dex.unavailable } };
-      for (const [k, v] of Object.entries(prevTok.sources || {})) if (k.startsWith('gt-') || k.startsWith('ds-')) t.sources[k] = { ...v, stale: true };
+      const staleInfo = { lastGoodAt: prevTok.dex.fetchedAt, lastAttemptAt: new Date().toISOString(), reason: t.dex.unavailable };
+      t.dex = { ...prevTok.dex, stale: staleInfo };
+      // The site reads stale.lastGoodAt and stale.reason, so `stale` must be an object (a bare
+      // `true` printed "Latest attempt failed: undefined" and dropped the fetch time).
+      for (const [k, v] of Object.entries(prevTok.sources || {})) {
+        if (!(k.startsWith('gt-') || k.startsWith('ds-'))) continue;
+        t.sources[k] = v.ok || v.stale ? { ...v, stale: { ...staleInfo, lastGoodAt: v.stale?.lastGoodAt || v.fetchedAt || staleInfo.lastGoodAt } } : v;
+      }
     } else {
       t.dex.fetchedAt = new Date().toISOString();
     }
@@ -503,7 +509,8 @@ async function main() {
           if (!monthsShown.has(e0.ts) && monthsShown.size >= 6) continue;
           monthsShown.add(e0.ts);
         }
-        const amountOf = (e) => (e.tokens != null ? `${Math.round(e.tokens).toLocaleString('en-US')} ${sym}${e.share != null ? ` (${(e.share * 100).toFixed(2)}% of supply)` : ''}` : 'amount not published');
+        // 3 significant digits, so the docs' 0.625% isn't shown as 0.63%
+        const amountOf = (e) => (e.tokens != null ? `${Math.round(e.tokens).toLocaleString('en-US')} ${sym}${e.share != null ? ` (${Number((e.share * 100).toPrecision(3))}% of supply)` : ''}` : 'amount not published');
         const known = evs.filter((e) => e.tokens != null);
         const total = known.reduce((sum, e) => sum + e.tokens, 0);
         const title = key.endsWith('|end')

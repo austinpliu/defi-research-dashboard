@@ -337,7 +337,8 @@ export async function render(root, { params }) {
   const rz = d.raises?.list || [];
   grid.append(h('div', { class: 'span-6' }, infoCard({
     kicker: 'Funding',
-    take: rz.length ? { pre: `${name} has `, hl: `${rz.length} recorded funding round${rz.length === 1 ? '' : 's'}`, post: rz.some((r) => r.amount) ? `, totalling ${usd(rz.reduce((s, r) => s + (r.amount || 0), 0) * 1e6)}` : '' } : null,
+    // rounds with no published amount aren't in the total, so say so instead of implying a full sum
+    take: rz.length ? { pre: `${name} has `, hl: `${rz.length} recorded funding round${rz.length === 1 ? '' : 's'}`, post: rz.some((r) => r.amount) ? `, totalling ${usd(rz.reduce((s, r) => s + (r.amount || 0), 0) * 1e6)}${rz.some((r) => !r.amount) ? ` (${rz.filter((r) => !r.amount).length} with no amount published)` : ''}` : '' } : null,
     fallback: `${name} funding rounds`,
     body: rz.length
       ? dataTable({ caption: 'Raises', csvName: `${slug}-raises`, search: false, sortKey: 'date', columns: [{ key: 'date', label: 'Date', fmt: (v) => date(v) }, { key: 'round', label: 'Round' }, { key: 'amount', label: 'Amount', num: true, fmt: (v) => (v != null ? usd(v * 1e6) : '—'), csv: (r) => (r.amount != null ? r.amount * 1e6 : '') }, { key: 'leadInvestors', label: 'Lead investors', wrap: true, fmt: (v) => (v || []).join(', ') || '—' }, { key: 'source', label: 'Source', fmt: (v) => extLink(v, 'link') }], rows: rz })

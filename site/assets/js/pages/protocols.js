@@ -44,7 +44,8 @@ export async function render(root) {
   ];
   root.append(h('section', { class: 'card' },
     h('div', { class: 'kicker' }, 'Watchlist + peers'),
-    takeaway(compareTakeaway(watch.filter((r) => r.tvlChange30d != null).map((r) => ({ name: r.name, change: r.tvlChange30d })), 'TVL', 'the last 30 days'), 'Every tracked protocol at a glance'),
+    // unfiltered, so "every protocol here" is only said when every row has TVL data
+    takeaway(compareTakeaway(watch.map((r) => ({ name: r.name, change: r.tvlChange30d })), 'TVL', 'the last 30 days'), 'Every tracked protocol at a glance'),
     dataTable({ caption: 'Tracked protocols', columns, rows, sortKey: 'tvl', filters: [{ key: 'category', label: 'Category', plural: 'categories' }, { key: 'chains', label: 'Chain' }, { key: 'groupLabel', label: 'List', plural: 'lists' }], csvName: 'watchlist', rowClass: (r) => (r.group === 'watchlist' ? 'is-watch' : null), pageSize: 50 }),
     sourceLine([rows[0]?.srcTvl, rows.find((r) => r.srcPrice)?.srcPrice].filter(Boolean).map((s) => ({ ...s, label: `${s.label} (each protocol page links its exact endpoint)` }))),
     h('p', { class: 'src' }, 'Mcap ÷ annualized fees is calculated here: CoinGecko market cap ÷ (DefiLlama 30-day fees × 365 ÷ 30).')));

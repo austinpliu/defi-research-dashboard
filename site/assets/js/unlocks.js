@@ -13,7 +13,10 @@ export const STATUS = {
 
 /** "During Dec 2026" when the docs give only the month; never an invented day. */
 export const whenText = (ts, precision) => (precision === 'month' ? `During ${monthYear(ts * 1000)}` : date(ts * 1000));
-const shareText = (s) => (s == null ? '—' : `${(s * 100).toFixed(s * 100 < 1 ? 2 : 1)}%`);
+// 3 significant digits: the docs' 0.625% stays 0.625%, not 0.63%
+export const shareText = (s) => (s == null ? '—' : `${Number((s * 100).toPrecision(3))}%`);
+// unlocks.json dates are YYYY-MM-DD or YYYY-MM; a month-only date must not become "—"
+export const docDate = (s) => (/^\d{4}-\d{2}$/.test(s || '') ? monthYear(Date.parse(`${s}-01T00:00:00Z`)) : date(Date.parse(`${s}T00:00:00Z`)));
 
 /** One-line, data-generated headline for an unlocks card. */
 export function unlockTakeaway(sym, u) {
@@ -21,7 +24,7 @@ export function unlockTakeaway(sym, u) {
   const next = (u.events || []).find((e) => e.tokens != null);
   if (next) return { pre: 'Next confirmed unlock: ', hl: `${compact(next.tokens, 2)} ${sym} ${next.precision === 'month' ? `during ${monthYear(next.ts * 1000)}` : `on ${date(next.ts * 1000)}`}`, post: next.share != null ? ` (${shareText(next.share)} of supply)` : '' };
   const lin = (u.schedules || []).find((s) => s.type === 'linear' && s.ongoing && s.tokensPerMonth != null);
-  if (lin) return { pre: `${lin.label}: `, hl: `about ${compact(lin.tokensPerMonth, 2)} ${sym} a month`, post: ` vests until ${date(Date.parse(`${lin.end}T00:00:00Z`))}` };
+  if (lin) return { pre: `${lin.label}: `, hl: `about ${compact(lin.tokensPerMonth, 2)} ${sym} a month`, post: ` vests until ${docDate(lin.end)}` };
   const dated = (u.events || []).find((e) => e.kind === 'release');
   if (dated) return { pre: `${sym}'s next scheduled release is `, hl: whenText(dated.ts, dated.precision).replace('During', 'during'), post: ', but the project doesn’t publish its size' };
   if (u.status === 'none') return { pre: `${sym} has `, hl: 'nothing left to unlock', post: ', according to its docs' };
@@ -55,7 +58,7 @@ export function unlocksBlock(u, sym, { maxEvents = 8 } = {}) {
       h('b', {}, s.label), ': ',
       s.type === 'monthly'
         ? `monthly until ${monthYear(Date.parse(`${s.to}-01T00:00:00Z`))}${s.tokensPerPeriod != null ? `, ${compact(s.tokensPerPeriod, 2)} ${sym} (${shareText(s.sharePerPeriod)} of supply) a month` : ', amount not published'}`
-        : `linear ${s.start ? `from ${date(Date.parse(`${s.start}T00:00:00Z`))} ` : ''}until ${s.end.length === 7 ? monthYear(Date.parse(`${s.end}-01T00:00:00Z`)) : date(Date.parse(`${s.end}T00:00:00Z`))}${s.tokens != null ? `, ${compact(s.tokens, 2)} ${sym} in total` : ''}${s.tokensPerMonth != null ? ` (about ${compact(s.tokensPerMonth, 2)} a month on average)` : ''}`,
+        : `linear ${s.start ? `from ${docDate(s.start)} ` : ''}until ${docDate(s.end)}${s.tokens != null ? `, ${compact(s.tokens, 2)} ${sym} in total` : ''}${s.tokensPerMonth != null ? ` (about ${compact(s.tokensPerMonth, 2)} a month on average)` : ''}`,
       s.basis ? h('div', { class: 'meta', style: { fontSize: '12.5px', color: 'var(--ink-2)', marginTop: '2px' } }, s.basis) : null))));
   }
   const srcs = (u.sources || []).filter((s) => s.url);

@@ -182,3 +182,17 @@ test('buildTokenUnlocks: monthly tranches, linear vesting, releases, and nothing
   assert.ok(!u.events.some((e) => e.label === 'Past'));
   assert.equal(buildTokenUnlocks(null).status, 'unconfirmed');
 });
+
+// ---- Regression tests for the Nov 2026 review (see REVIEW.md) ----
+
+test('sumLastDays can require a complete window (a gap must not shrink one side of a comparison)', () => {
+  const full = series([1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2]);
+  const gappy = full.filter((_, i) => i !== 2); // one day missing in the earlier week
+  assert.equal(sumLastDays(gappy, 7, 7), 6); // the default 80% rule still sums 6 of 7 days
+  assert.equal(sumLastDays(gappy, 7, 7, 7), null); // a complete window is required
+  assert.equal(sumLastDays(full, 7, 7, 7), 7);
+});
+
+test('stripHtml survives entities outside the Unicode range instead of throwing', () => {
+  assert.equal(stripHtml('a &#99999999; b &#x110000; c'), 'a � b � c');
+});

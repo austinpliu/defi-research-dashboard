@@ -583,8 +583,10 @@ function summarizeFees(res, src) {
   if (!s.length && d.total24h == null) return { unavailable: 'DefiLlama has no data of this type for this protocol', src };
   // The summary endpoint doesn't always include window-over-window changes;
   // when it doesn't, compute them from the same daily series (and say so).
-  const calc7 = d.change_7dover7d == null ? pctChange(sumLastDays(s, 7), sumLastDays(s, 7, 7)) : null;
-  const calc30 = d.change_30dover30d == null ? pctChange(sumLastDays(s, 30), sumLastDays(s, 30, 30)) : null;
+  // Both windows must have every day: comparing a 26-day sum with a 30-day sum (a gap in
+  // DefiLlama's series) showed Ondo's fees at +19.6% when the like-for-like change was about +4%.
+  const calc7 = d.change_7dover7d == null ? pctChange(sumLastDays(s, 7, 0, 7), sumLastDays(s, 7, 7, 7)) : null;
+  const calc30 = d.change_30dover30d == null ? pctChange(sumLastDays(s, 30, 0, 30), sumLastDays(s, 30, 30, 30)) : null;
   return {
     total24h: roundSmart(d.total24h),
     total7d: roundSmart(d.total7d),
