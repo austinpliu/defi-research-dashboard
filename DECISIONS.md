@@ -83,6 +83,12 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
   - Using an old fork or mirror of a repo its owner has taken private would get around DefiLlama's decision to sell unlock data on its paid API, so it wasn't tried. A sandbox probe of a CDN mirror was also refused by this environment's safety check, rightly.
   - The pipeline still checks once per run (anonymously, outside this repo's checkout, so no token is ever sent), and the result is listed among the Catalysts sources. If the repo becomes public again, the check will say so.
 
+- **Route 2, on-chain vesting contracts: not feasible for these tokens yet.** Reading a schedule from the chain needs the vesting contract's address from an official source. Guessing addresses, or trusting unofficial explorer labels, would be inventing the source.
+  - Ethena's "Key Addresses" page lists the ENA and sENA token contracts but no team or investor vesting contract.
+  - Morpho's token docs describe the vesting cohorts but publish no vesting contract.
+  - No official vesting contract address was found for Ondo, Centrifuge, Maple or Hyperliquid. Hyperliquid's contributor tokens live on HyperCore, its own chain, not in an EVM contract. Pendle's team and investor tokens are fully vested, so there is nothing to read.
+  - When a project publishes its vesting contract, a free keyless RPC call can read it from the pipeline, with an explorer link for checking.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.
