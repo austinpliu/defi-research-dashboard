@@ -16,6 +16,7 @@ const folders = new Set(); // explicit (possibly empty) folders
 const meta = new Map();
 const listeners = new Set();
 const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('defi-dashboard-notes') : null;
+channel?.unref?.(); // Node (tests) only: don't keep the process alive
 
 function req(r) {
   return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });

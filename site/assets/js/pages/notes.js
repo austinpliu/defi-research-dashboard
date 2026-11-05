@@ -6,6 +6,7 @@ import { buildIndex, basename, dirname, parseLinks, parseFrontmatter, parseTags,
 import { askText, confirmBox, choose, popMenu, toast } from '../notes/dialog.js';
 import { newNote, createLinked, noteHref, allTemplates } from '../notes/workspace.js';
 import { renderGraph } from '../notes/graph.js';
+import { syncButton, exportButton, importButton, conflictBanner } from '../notes/backup.js';
 
 const EXP_KEY = 'notes-expanded';
 let expanded;
@@ -16,7 +17,7 @@ const clean = (...xs) => xs.flat(Infinity).filter((x) => x !== null && x !== und
 const go = (hash, replace = false) => { if (replace) { history.replaceState(null, '', hash); dispatchEvent(new HashChangeEvent('hashchange')); } else location.hash = hash; };
 
 // optional parts added by later modules (graph view, sync/export)
-export const hooks = { graph: renderGraph, headerActions: [] };
+export const hooks = { graph: renderGraph, headerActions: [syncButton, exportButton, importButton] };
 
 export async function render(root, { params, query }) {
   const { persistent } = await store.init();
@@ -50,6 +51,7 @@ export async function render(root, { params, query }) {
         h('button', { type: 'button', class: 'tool', onclick: (e) => templateMenu(e.currentTarget) }, 'From template'),
         h('a', { class: `tool${view === 'graph' ? ' active' : ''}`, href: view === 'graph' ? '#/notes' : '#/notes?view=graph', 'aria-pressed': String(view === 'graph') }, svgIcon('graph'), view === 'graph' ? 'Back to notes' : 'Graph'),
         ...hooks.headerActions.map((fn) => fn()))),
+    conflictBanner(),
     persistent ? null : h('div', { class: 'notice bad', style: { marginBottom: '12px' } }, h('b', {}, 'Notes aren’t being saved. '), 'Storage is blocked in this window. Use Export to keep a copy.'),
     app));
 

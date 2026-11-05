@@ -3,3 +3,9 @@ node_modules/
 *.log
 /test-results/
 /playwright-report/
+# Notes never belong in this public repository: exported vaults and any notes folder
+defi-notes-*.zip
+*.vault.zip
+/notes/
+/vault/
+/site/notes/

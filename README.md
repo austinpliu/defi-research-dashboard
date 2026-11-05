@@ -19,6 +19,7 @@ Me: a writer and researcher, not an engineer. I can run commands and read code, 
 | **05 Catalysts** | Governance votes, scheduled events, launches and upgrades, governance forum posts, protocol blog posts and news about your watchlist, as a dated timeline and a filterable list (token, type, date range, search). Labelled as information, not prediction. Below it, prediction markets: the busiest crypto markets on Polymarket with their current odds, and the prediction-market protocols on DefiLlama. |
 | **06 Screener** | The ~600 largest DeFi protocols. Sort any column, filter by category and chain, search, export CSV. |
 | **07 Glossary** | Every metric explained in one sentence. The same text appears when you hover or tap the (?) next to a number. |
+| **09 Notes** | Your research notes, Obsidian-style: markdown with live preview, `[[links]]`, backlinks, #tags, folders, templates, search and a graph view. Open them from any page with the notes button, and add a chart or the current page to a note. Notes stay in your browser, with optional sync to your own private GitHub repository. See [Notes](#notes) below. |
 | **08 Sources** | When the data was fetched, which requests failed and why, how to fix them, and an automatic check of every source link (with the page title, so you can tell it lands on the right page). |
 
 On every chart:
@@ -114,6 +115,75 @@ Upcoming unlocks come from **`unlocks.json`**, a hand-checked file built from ea
 - **Dates:** if the docs only say "monthly", the site shows the month ("During Dec 2026"), not a made-up day.
 
 To update an entry: open the linked page, compare, and edit the token's entry in `unlocks.json` (shares are fractions: 0.00625 = 0.625%). Then set `lastChecked` to today's date. Schedule types are `monthly` (with `from`/`to` as YYYY-MM and `sharePerPeriod`) and `linear` (with `start`/`end` dates and a `share` or `tokens` total). One-off releases go in `events` (with a `date` and an optional `share`). If an entry is malformed, the Sources page says so, and the token falls back to "unconfirmed".
+
+## Notes
+
+The **Notes** section (and the notes button at the top right of every page) is a research notebook that works like a small Obsidian.
+
+### What it does
+
+- **Write in markdown** with a live preview. The editor saves itself as you type. Shortcuts: Ctrl/⌘+B bold, +I italic, +K link a note, +E preview, +Z undo.
+- **Link notes** by typing `[[`: pick a note from the list, or type a new name to create it when you click the link. `[[Note|other words]]` shows other words; `#tags` tag a note.
+- **Links and backlinks:** under each note you see what it links to and which notes link back. Renaming a note updates every link to it.
+- **Folders:** create, rename, move and delete folders and notes in the sidebar, by drag and drop or the ⋯ menu. Deleting moves a note to the **Trash**, where you can restore it.
+- **Graph view:** an interactive map of your notes and their links. Drag notes around, zoom and pan, hover to see a note's neighbours, click to open, and filter by folder or tag. With **Draw a link** on (or holding Shift), drag from one note to another to add a link.
+- **Search** every note's text, filtered by tag or folder. **Pinned** and **Recent** notes sit at the top of the sidebar.
+- **Templates:** protocol research, token thesis, catalyst watch and daily log. Any note you put in a folder called `Templates` becomes a template too.
+- **While you browse:**
+  - The notes button (or **Alt+M**) opens a side panel without leaving the page.
+  - **Alt+N** starts a quick note from anywhere (it goes in `Inbox/`).
+  - Each chart has a **Note** button that pastes the chart's headline, page link and source into your note. **Link page** adds a link to the page you're on.
+  - Protocol and token pages show **Your notes** about them, with **New note about this**, which pre-fills a link back to the page.
+
+### Where your notes live (privacy)
+
+- Notes are saved **in this browser only** (in its IndexedDB storage). They are never added to this repository and never published with the site. The code that saves them has no way to reach either.
+- Clearing the browser's site data deletes them. So use **Export** now and then, or turn on sync.
+- In a private window, the browser may refuse to store anything. The Notes page then warns you, and notes last only until the tab closes.
+
+### Backup: export and import
+
+- **Export** downloads every note as a zip of `.md` files, keeping your folders. Unzip it and open the folder in Obsidian ("Open folder as vault"), and it works as a vault: links, tags and folders included.
+- **Import** takes such a zip (or an Obsidian vault you zipped yourself) or individual `.md` files. It never overwrites anything: if a different note already has the same name, the incoming one is saved next to it as "… (imported)".
+
+### Sync between your devices (optional)
+
+Sync keeps the same notes on your phone and laptop. It copies them as plain markdown files to **a private GitHub repository you create**. The dashboard never sees them: the browser talks straight to GitHub.
+
+**One-time setup**
+
+1. On GitHub, create a **new private repository** (for example `research-notes`). Tick "Private". Adding a README is fine.
+2. Create a token that can touch only that repository:
+   1. GitHub → your photo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+   2. Name it (e.g. "dashboard notes") and pick an expiry. A year is reasonable; you'll redo step 3 when it expires.
+   3. **Repository access:** choose **Only select repositories**, and select your notes repository. Nothing else.
+   4. **Permissions → Repository permissions → Contents: Read and write.** Leave everything else as "No access". (GitHub adds "Metadata: Read-only" by itself; that's required and harmless.)
+   5. **Generate token** and copy it (it starts with `github_pat_`). GitHub shows it only once.
+3. On the dashboard: **Notes** → **Sync: off** → paste the repository (`yourname/research-notes`) and the token → **Save and sync**. The dashboard checks that the repository is private before using it. It refuses public repositories and this dashboard's own repository.
+
+**On a second device** (for example your phone):
+
+1. Open the dashboard in the browser you'll use for notes.
+2. Go to **Notes** → **Sync: off**.
+3. Enter the same repository and token, then **Save and sync**. Your notes download.
+
+You can reuse the same token on both devices, or create a second one with the same settings.
+
+**How it behaves**
+
+- It syncs when you open the dashboard, about 20 seconds after you stop typing, and every 5 minutes while the tab is open. **Sync now** runs it straight away.
+- Folders map to real folders in the repository, and every note is a `.md` file. You can also open the repository's contents in Obsidian or edit them on github.com.
+- **Conflicts:** if the same note changed on both devices since the last sync, nothing is overwritten.
+  - Your version stays as the note.
+  - The other device's version is saved next to it as "Note (conflict 2026-11-05 1342)", with a `sync-conflict` line at the top.
+  - A banner on the Notes page lists these. Merge what you need, then delete the conflict copy.
+  - If a note was deleted on one device but edited on the other, the edit wins and the note comes back.
+- The token is stored only in that browser (its local storage) and is only ever sent to `api.github.com`. Anyone with access to that browser profile could read it, which is why it is limited to one repository and only "Contents".
+
+**To stop syncing or revoke access**
+
+- On a device: **Notes** → **Sync** → **Turn off**. This forgets the token in that browser; your notes stay.
+- To cut off access completely: GitHub → **Settings** → **Developer settings** → **Fine-grained tokens** → pick the token → **Delete**. Every device using it stops syncing at once, and nothing else on your account is affected.
 
 ## How to add a protocol
 

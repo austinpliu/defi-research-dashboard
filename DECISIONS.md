@@ -113,6 +113,30 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
 - **Live result (run 26):** the free protocol list carries no per-protocol double-count data (0 protocols). Category rules bring the total from $198.9B to $108.5B, still 128% of the $84.9B headline. So shares are of the categories' own total, and the Overview note explains why they can't be of the headline. I didn't use DefiLlama's undocumented `lite/protocols2` endpoint to close the gap (same rule as for unlocks: documented endpoints only).
 - **Shares are of the headline only when the totals reconcile (within 3%).** Otherwise they are of the categories' own total, and the note under the chart says how far apart the two are and why. A share must never be part of a total it exceeds. The 3% allowance covers DefiLlama totalling each chain separately; chain shares already match the headline to within 0.3%.
 
+## Notes workspace (Nov 2026)
+
+- **Storage:** IndexedDB in the browser, with an in-memory copy for instant reads. If IndexedDB is blocked (some private windows), notes live in memory for the tab, and the page says so and points to Export. Notes are never written to `site/` or the repo. `.gitignore` covers exported vaults and any notes folder, and `tests/privacy.test.mjs` fails if a token, an export or a notes folder is ever tracked, or if notes code calls the network anywhere but sync's GitHub API.
+- **Format:** every note is a `.md` file at its folder path.
+  - Frontmatter is optional. New notes get `created` and `updated`, and tags typed in the tag field go to `tags:`. Pins are stored as `pinned: true` so they sync. Unknown frontmatter keys are kept as written.
+  - Links follow Obsidian: `[[Name]]`, `[[Name|alias]]`, `[[Folder/Name#heading]]`, `![[embeds]]` (shown as links) and `#tags`. Resolution goes path first, then name, then alias, preferring the same folder and then the shortest path.
+  - Renames write the shortest unambiguous link (the name, or the path when two notes share a name).
+- **Trash:** `.trash/` with the original folder structure, as in Obsidian. Links to a trashed note are left as written, so restoring it reconnects them.
+- **Undo:** edits made by toolbar buttons and autocomplete go through `document.execCommand('insertText')`, so the browser's own undo covers them. It is deprecated but still the only way to keep a textarea's undo stack; there is a fallback if it's missing.
+- **Quick-capture shortcuts:** **Alt+N** (quick note) and **Alt+M** (panel). Ctrl/⌘+N and Ctrl/⌘+Shift+N belong to the browser (new window, private window), so they can't be used.
+- **Preview safety:** the markdown preview is built from DOM nodes, never `innerHTML`. Links must be http(s) or in-dashboard (`#/…`). Remote images aren't loaded (that would tell third parties when a note is opened); they show as links.
+- **Graph:** hand-written canvas force layout (no library), coloured by top-level folder with the dashboard's validated categorical palette. "Draw a link" appends `[[target]]` at the end of the source note.
+- **Sync:**
+  - **Data model:** a three-way comparison of git blob hashes (this browser, the repo, the last agreed state), so it works without timestamps or clocks.
+  - **Conflict rules:**
+    - Both changed: keep both. The other device's version becomes a flagged "(conflict …)" note on both sides.
+    - Deleted on one side, edited on the other: the edit wins.
+    - Uploads name the version they replace, so GitHub rejects a write if the repo changed mid-sync, and the next run treats it as a conflict.
+  - **API:** the Contents API makes one commit per changed file. That's simpler and safer than building trees, and fine for a notes repo.
+  - **Guards:** sync refuses public repos and this dashboard's repo (old and new names).
+  - **Token:** kept in localStorage in that browser only and sent only to `api.github.com`. Restricting it to one repository and "Contents" is the user's job, and the README walks through it.
+  - **Tests:** sync can't reach GitHub from the build sandbox, so it is tested against a fake GitHub that enforces the same `sha` checks.
+- **Import never overwrites:** a different note with the same name comes in as "… (imported)". Obsidian's `.obsidian/` folder and non-markdown files are skipped and counted.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.

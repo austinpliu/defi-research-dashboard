@@ -7,6 +7,7 @@ import { createEditor, saveAllEditors } from './editor.js';
 import { basename, dirname, searchNotes, notesMentioning } from './model.js';
 import { newNote, quickNote, noteHref, pageLink, createLinked } from './workspace.js';
 import { loadSafe } from '../data.js';
+import { startAutoSync } from './sync.js';
 
 const KEY = 'notes-panel';
 let panel = null;
@@ -157,6 +158,8 @@ export async function toggle(on) {
 
 /** Header button, shortcuts, chart references. Called once from app.js. */
 export function initNotesPanel() {
+  // sync runs only if you set it up on the Notes page (token in this browser)
+  store.init().then(() => startAutoSync()).catch(() => {});
   const btn = h('button', { type: 'button', class: 'icon-btn notes-btn', id: 'notes-btn', 'aria-controls': 'notes-panel', 'aria-expanded': 'false', title: 'Notes (Alt+M) · quick note: Alt+N', 'aria-label': 'Open notes panel' }, svgIcon('note'));
   btn.addEventListener('click', () => toggle());
   const theme = document.getElementById('theme-btn');
