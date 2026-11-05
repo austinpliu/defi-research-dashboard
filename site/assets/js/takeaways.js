@@ -129,10 +129,15 @@ export function flowTakeaway(label, h, verb = 'swapped') {
   return null;
 }
 
-export function categoryTakeaway(list) {
+export function categoryTakeaway(list, basis) {
   const t = list?.[0];
   if (!t || !isNum(t.share)) return null;
-  return { pre: `${t.category} is DeFi's largest category, with `, hl: `${pct(t.share, { signed: false, digits: 0 })} of protocol TVL`, post: '' };
+  // ties: don't crown one category when the next is level with it
+  if (list[1] && isNum(list[1].share) && Math.round(list[1].share) === Math.round(t.share)) {
+    return { pre: `${t.category} and ${list[1].category} are `, hl: `DeFi's largest categories, with ${pct(t.share, { signed: false, digits: 0 })} of TVL each`, post: '' };
+  }
+  const of = basis?.denominator === 'headline' ? 'DeFi TVL' : 'the TVL in these categories';
+  return { pre: `${t.category} is DeFi's largest category, with `, hl: `${pct(t.share, { signed: false, digits: 0 })} of ${of}`, post: '' };
 }
 
 /** Protocol fees vs revenue. */

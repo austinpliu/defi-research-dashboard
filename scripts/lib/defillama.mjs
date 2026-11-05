@@ -34,6 +34,85 @@ export function isChainKey(k) {
 }
 
 const NOT_PROTOCOL_CATEGORIES = new Set(['CEX', 'Chain']);
+
+// DefiLlama's headline DeFi TVL leaves out liquid staking and TVL that another protocol
+// also counts ("double counted": vaults, curators and restaking deposited into other
+// protocols). The protocol list breaks both out per protocol in chainTvls
+// (doublecounted, liquidstaking, and dcAndLsOverlap for TVL that is both).
+// If a response ever lacks those keys, these category rules stand in for them.
+export const LIQUID_STAKING_CATEGORIES = new Set(['Liquid Staking', 'Liquid Restaking']);
+export const DOUBLE_COUNTED_CATEGORIES = new Set(['Yield', 'Yield Aggregator', 'Restaking', 'Liquid Restaking', 'Risk Curators', 'Onchain Capital Allocator']);
+
+/** The part of one protocol's TVL that DefiLlama's headline counts, plus what it leaves out. */
+export function headlineBasis(p, useKeys) {
+  const tvl = num(p.tvl) || 0;
+  let dc = 0;
+  let ls = 0;
+  let both = 0;
+  if (useKeys) {
+    const ct = p.chainTvls || {};
+    dc = Math.min(tvl, num(ct.doublecounted) || 0);
+    ls = Math.min(tvl, num(ct.liquidstaking) || 0);
+    both = Math.min(dc, ls, num(ct.dcAndLsOverlap) || 0);
+    if (p.doublecounted === true) dc = tvl; // a protocol-level flag means all of it
+  } else {
+    if (DOUBLE_COUNTED_CATEGORIES.has(p.category)) dc = tvl;
+    if (LIQUID_STAKING_CATEGORIES.has(p.category)) ls = tvl;
+    both = Math.min(dc, ls);
+  }
+  const counted = Math.max(0, tvl - dc - ls + both);
+  return { counted, doubleCounted: dc - both, liquidStaking: ls - both, both };
+}
+
+/**
+ * TVL by category on the same basis as the headline: shares are of the headline DeFi TVL.
+ * Returns totals of what was left out, and how much of the headline the categories explain.
+ */
+export function categoryBreakdown(protocols, headlineTvl, { top = 14 } = {}) {
+  const list = protocols.filter((p) => !NOT_PROTOCOL_CATEGORIES.has(p.category) && !BRIDGE_CATEGORIES.has(p.category) && num(p.tvl) > 0);
+  const useKeys = list.some((p) => p.chainTvls && ['doublecounted', 'liquidstaking', 'dcAndLsOverlap'].some((k) => num(p.chainTvls[k]) !== null));
+  const byCat = new Map();
+  const left = { liquidStaking: 0, doubleCounted: 0, both: 0 };
+  let raw = 0;
+  for (const p of list) {
+    const b = headlineBasis(p, useKeys);
+    raw += num(p.tvl);
+    left.liquidStaking += b.liquidStaking;
+    left.doubleCounted += b.doubleCounted;
+    left.both += b.both;
+    if (b.counted <= 0) continue;
+    const c = p.category || 'Other';
+    const e = byCat.get(c) || { category: c, tvl: 0, count: 0 };
+    e.tvl += b.counted;
+    e.count += 1;
+    byCat.set(c, e);
+  }
+  const catList = [...byCat.values()].sort((a, b) => b.tvl - a.tvl);
+  const attributed = catList.reduce((s, c) => s + c.tvl, 0);
+  // Shares are of the headline, so they read against the figure shown next to it, but only
+  // when the categories reconcile with it. If they still add up to more than the headline
+  // (TVL counted twice that DefiLlama didn't flag), shares of the headline would total over
+  // 100%, so they use the categories' own total instead and the page says why.
+  const hl = num(headlineTvl) > 0 ? headlineTvl : null;
+  const over = hl != null && attributed > hl * 1.03;
+  const denom = hl != null && !over ? hl : attributed;
+  const denominator = hl == null ? 'attributed-no-headline' : over ? 'attributed-over-headline' : 'headline';
+  return {
+    list: catList.slice(0, top).map((c) => ({ ...c, tvl: roundSmart(c.tvl), share: roundSmart((c.tvl / denom) * 100) })),
+    basis: {
+      method: useKeys ? 'defillama-keys' : 'category-rules',
+      denominator,
+      headline: roundSmart(headlineTvl),
+      attributed: roundSmart(attributed),
+      attributedShare: num(headlineTvl) > 0 ? roundSmart((attributed / headlineTvl) * 100) : null,
+      rawSum: roundSmart(raw),
+      liquidStaking: roundSmart(left.liquidStaking),
+      doubleCounted: roundSmart(left.doubleCounted),
+      both: roundSmart(left.both),
+      categories: catList.length,
+    },
+  };
+}
 // Bridges hold assets that are already counted on the chains they bridge to, so
 // DefiLlama's headline TVL leaves them out; we do the same for categories and movers.
 const BRIDGE_CATEGORIES = new Set(['Bridge', 'Canonical Bridge']);
@@ -236,21 +315,8 @@ export function buildMarket(raw, extra) {
   let movers = { gainers: [], losers: [], src: plSrc, unavailable: raw.protocols.error };
   if (raw.protocols.ok && Array.isArray(raw.protocols.data)) {
     const list = raw.protocols.data.filter((p) => !NOT_PROTOCOL_CATEGORIES.has(p.category) && !BRIDGE_CATEGORIES.has(p.category) && num(p.tvl) > 0);
-    const byCat = new Map();
-    for (const p of list) {
-      const c = p.category || 'Other';
-      const e = byCat.get(c) || { category: c, tvl: 0, count: 0 };
-      e.tvl += p.tvl;
-      e.count += 1;
-      byCat.set(c, e);
-    }
-    const catList = [...byCat.values()].sort((a, b) => b.tvl - a.tvl);
-    const catTotal = catList.reduce((s, c) => s + c.tvl, 0);
-    categories = {
-      list: catList.slice(0, 14).map((c) => ({ ...c, tvl: roundSmart(c.tvl), share: roundSmart((c.tvl / catTotal) * 100) })),
-      excluded: [...BRIDGE_CATEGORIES, ...NOT_PROTOCOL_CATEGORIES],
-      src: plSrc,
-    };
+    // same basis as the headline TVL (no liquid staking, no double counting); shares are of the headline
+    categories = { ...categoryBreakdown(raw.protocols.data, tvl.value), excluded: [...BRIDGE_CATEGORIES, ...NOT_PROTOCOL_CATEGORIES], src: plSrc, headlineSrc: 'dl-tvl' };
     const MIN_TVL = 100e6;
     const eligible = list
       .filter((p) => p.tvl >= MIN_TVL && num(p.change_7d) !== null && Math.abs(p.change_7d) < 10000)

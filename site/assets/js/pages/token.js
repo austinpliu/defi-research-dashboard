@@ -8,6 +8,7 @@ import { usd, pct, ratio, date, dateTime, compact } from '../format.js';
 import { trimDays, rangeLabel } from '../series.js';
 import { priceTakeaway, supplyTakeaway, liquidityTakeaway, trendTakeaway } from '../takeaways.js';
 import { unlocksBlock, unlockTakeaway } from '../unlocks.js';
+import { notesCard } from '../notes/panel.js';
 
 export async function render(root, { params }) {
   const id = params[0];
@@ -47,6 +48,7 @@ export async function render(root, { params }) {
   ));
 
   const grid = h('div', { class: 'grid', style: { marginTop: '18px' } });
+  root.append(h('div', { style: { marginBottom: '18px' } }, notesCard({ kind: 'token', name: t.name || pr.name || sym, symbol: sym, slug: t.protocol?.slug || null, tokenId: id })));
   root.append(grid);
   const se = t.series || {};
 

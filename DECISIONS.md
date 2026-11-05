@@ -22,7 +22,8 @@ Choices made while building this unattended, with the reason for each. Newest at
 - **DEX liquidity:** DexScreener `/token-pairs/v1/{chainId}/{address}` first, using a small table that maps CoinGecko platform ids to DexScreener chain ids. GeckoTerminal is the fallback; its `/networks` list maps CoinGecko platform ids to its own network ids, so that mapping isn't guessed. (The first plan was GeckoTerminal first; the live runs showed it rate-limits too quickly.)
 - **Governance:** Snapshot's public GraphQL hub. Space ids come from DefiLlama's `governanceID` field or CoinGecko's `links.snapshot_url` (never guessed); `watchlist.json` can add more.
 - **News:** RSS feeds from CoinDesk, The Block, Decrypt, Cointelegraph, Blockworks, DL News and The Defiant; protocol governance forums via Discourse's standard `/latest.rss`, and Medium blogs via `/feed`. Feeds that fail are listed on the Sources page with the error. Only headline, date, a short snippet and the link are stored.
-- **User-Agent:** requests identify as `defi-research-dashboard/1.0 (+repo URL)`, with no personal details.
+- **Repo renamed (Nov 2026):** the repository is now `austinpliu/defidashboard`; README, the site footer and the pipeline's User-Agent use the new name (GitHub redirects the old one).
+- **User-Agent:** requests identify as `defidashboard/1.0 (+repo URL)`, with no personal details.
 
 ## Data rules
 
@@ -101,6 +102,40 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
     - HYPE, SYRUP, AAVE, SKY and COMP, unconfirmed: none of these projects publishes a schedule.
   - **How the docs were read:** this sandbox can't open most websites, so each page was read through web-search results that quote it. Every entry links the page so you can check it yourself. Third-party trackers (Tokenomist, MEXC, KuCoin) were used only to find the official pages, never as the source of a number.
   - **Safety rails:** the pipeline validates the file (status, dates, http(s) links, shares between 0 and 1), lists bad entries on the Sources page, and adds a reminder once `lastChecked` is more than 90 days old. Unlock events in Catalysts carry a "hand-checked" tag. Tranches for one token in the same month (e.g. Ethena's core contributors and investors) are merged into one item, and only the next 6 months are shown (token pages show the full year).
+
+## Category shares (REVIEW item 7, Nov 2026)
+
+- **Categories use the headline's basis.** DefiLlama's headline DeFi TVL leaves out liquid staking and double-counted TVL, so each protocol now adds only what the headline counts. That is its TVL minus DefiLlama's per-protocol `doublecounted` and `liquidstaking` figures, with `dcAndLsOverlap` added back.
+  - I couldn't confirm from this sandbox that the protocol list carries those figures. The pipeline's list of non-chain keys already names them, and DefiLlama's site uses them for its "double count" and "liquid staking" toggles.
+  - If a run's list lacks them, the pipeline says so on the Sources page and leaves out whole categories by rule: Liquid Staking, Liquid Restaking, Yield, Yield Aggregator, Restaking, Risk Curators and Onchain Capital Allocator.
+  - "Staking Pool" ($14.6B in run 26) is not on that list and stays in the category totals. **Its treatment is unconfirmed**: I couldn't find whether DefiLlama's headline counts it, and you chose (5 Nov 2026) to keep it in rather than guess.
+  - DefiLlama's undocumented `lite/protocols2` feed would likely close the remaining gap; you chose (5 Nov 2026) to keep to documented sources, so it isn't used.
+- **Live result (run 26):** the free protocol list carries no per-protocol double-count data (0 protocols). Category rules bring the total from $198.9B to $108.5B, still 128% of the $84.9B headline. So shares are of the categories' own total, and the Overview note explains why they can't be of the headline. I didn't use DefiLlama's undocumented `lite/protocols2` endpoint to close the gap (same rule as for unlocks: documented endpoints only).
+- **Shares are of the headline only when the totals reconcile (within 3%).** Otherwise they are of the categories' own total, and the note under the chart says how far apart the two are and why. A share must never be part of a total it exceeds. The 3% allowance covers DefiLlama totalling each chain separately; chain shares already match the headline to within 0.3%.
+
+## Notes workspace (Nov 2026)
+
+- **Storage:** IndexedDB in the browser, with an in-memory copy for instant reads. If IndexedDB is blocked (some private windows), notes live in memory for the tab, and the page says so and points to Export. Notes are never written to `site/` or the repo. `.gitignore` covers exported vaults and any notes folder, and `tests/privacy.test.mjs` fails if a token, an export or a notes folder is ever tracked, or if notes code calls the network anywhere but sync's GitHub API.
+- **Format:** every note is a `.md` file at its folder path.
+  - Frontmatter is optional. New notes get `created` and `updated`, and tags typed in the tag field go to `tags:`. Pins are stored as `pinned: true` so they sync. Unknown frontmatter keys are kept as written.
+  - Links follow Obsidian: `[[Name]]`, `[[Name|alias]]`, `[[Folder/Name#heading]]`, `![[embeds]]` (shown as links) and `#tags`. Resolution goes path first, then name, then alias, preferring the same folder and then the shortest path.
+  - Renames write the shortest unambiguous link (the name, or the path when two notes share a name).
+- **Trash:** `.trash/` with the original folder structure, as in Obsidian. Links to a trashed note are left as written, so restoring it reconnects them.
+- **Undo:** edits made by toolbar buttons and autocomplete go through `document.execCommand('insertText')`, so the browser's own undo covers them. It is deprecated but still the only way to keep a textarea's undo stack; there is a fallback if it's missing.
+- **Quick-capture shortcuts:** **Alt+N** (quick note) and **Alt+M** (panel). Ctrl/⌘+N and Ctrl/⌘+Shift+N belong to the browser (new window, private window), so they can't be used.
+- **Preview safety:** the markdown preview is built from DOM nodes, never `innerHTML`. Links must be http(s) or in-dashboard (`#/…`). Remote images aren't loaded (that would tell third parties when a note is opened); they show as links.
+- **Graph:** hand-written canvas force layout (no library), coloured by top-level folder with the dashboard's validated categorical palette. "Draw a link" appends `[[target]]` at the end of the source note.
+- **Sync:**
+  - **Data model:** a three-way comparison of git blob hashes (this browser, the repo, the last agreed state), so it works without timestamps or clocks.
+  - **Conflict rules:**
+    - Both changed: keep both. The other device's version becomes a flagged "(conflict …)" note on both sides.
+    - Deleted on one side, edited on the other: the edit wins.
+    - Uploads name the version they replace, so GitHub rejects a write if the repo changed mid-sync, and the next run treats it as a conflict.
+  - **API:** the Contents API makes one commit per changed file. That's simpler and safer than building trees, and fine for a notes repo.
+  - **Guards:** sync refuses public repos and this dashboard's repo (old and new names).
+  - **Token:** kept in localStorage in that browser only and sent only to `api.github.com`. Restricting it to one repository and "Contents" is the user's job, and the README walks through it.
+  - **Tests:** sync can't reach GitHub from the build sandbox, so it is tested against a fake GitHub that enforces the same `sha` checks.
+- **Import never overwrites:** a different note with the same name comes in as "… (imported)". Obsidian's `.obsidian/` folder and non-markdown files are skipped and counted.
 
 ## Design
 

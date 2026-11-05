@@ -7,7 +7,7 @@
 //   show exactly what was fetched, when, and what failed.
 
 const USER_AGENT =
-  'defi-research-dashboard/1.0 (+https://github.com/austinpliu/defi-research-dashboard)';
+  'defidashboard/1.0 (+https://github.com/austinpliu/defidashboard)';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

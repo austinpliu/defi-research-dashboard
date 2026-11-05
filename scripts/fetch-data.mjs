@@ -168,6 +168,16 @@ async function main() {
 
   const watchSlugs = new Set(entries.map((e) => e.defillama));
   const screener = buildScreener(raw, watchSlugs);
+  if (market.categories?.basis) {
+    const b = market.categories.basis;
+    console.log(`   ↳ categories (${b.method}): ${roundSmart((b.attributed || 0) / 1e9)}B of the ${roundSmart((b.headline || 0) / 1e9)}B headline (${b.attributedShare}%); left out: liquid staking ${roundSmart((b.liquidStaking || 0) / 1e9)}B, double counted ${roundSmart((b.doubleCounted || 0) / 1e9)}B, both ${roundSmart((b.both || 0) / 1e9)}B; raw sum ${roundSmart((b.rawSum || 0) / 1e9)}B`);
+    if (b.method === 'category-rules') problem('info', `Category TVL: DefiLlama's free protocol list doesn't mark double-counted or liquid-staking TVL per protocol, so whole categories are left out by rule; the rest adds up to ${b.attributedShare}% of the headline TVL, so category shares are of that total (explained on the Overview)`);
+  }
+  if (PROBE && raw.protocols.ok) {
+    const keyCount = {};
+    for (const p of raw.protocols.data) for (const k of ['doublecounted', 'liquidstaking', 'dcAndLsOverlap']) if (p.chainTvls && k in p.chainTvls) keyCount[k] = (keyCount[k] || 0) + 1;
+    console.log(`   ↳ protocols with double-count keys: ${JSON.stringify(keyCount)}; with a doublecounted flag: ${raw.protocols.data.filter((p) => p.doublecounted === true).length}`);
+  }
 
   // 2. One file per protocol -----------------------------------------------
   console.log('\n== Protocols');

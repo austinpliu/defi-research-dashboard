@@ -6,6 +6,7 @@ import { usd, pct, ratio, compact, date, relative, direction } from '../site/ass
 import {
   trendTakeaway, chainTakeaway, leaderTakeaway, stablecoinTakeaway, moversTakeaway, flowTakeaway, revenueTakeaway,
   valuationTakeaway, supplyTakeaway, liquidityTakeaway, yieldTakeaway, compareTakeaway, catalystTakeaway, priceTakeaway, seriesChange,
+  categoryTakeaway,
 } from '../site/assets/js/takeaways.js';
 import { trimDays, indexTo100, weeklySum, rollingSum, monthlyLast, valueAt, changeOver } from '../site/assets/js/series.js';
 import { toCSV } from '../site/assets/js/export.js';
@@ -194,4 +195,12 @@ test('catalystTakeaway leaves out empty parentheses when a vote has no symbol', 
   const now = Date.parse('2026-11-04T00:00:00Z');
   const t = catalystTakeaway([{ type: 'governance-vote', status: 'open', date: '2026-11-06T00:00:00Z', title: 'Vote', symbols: [] }], now);
   assert.equal(text(t), 'Next vote to close: Vote');
+});
+
+test('categoryTakeaway names the headline basis and handles ties', () => {
+  const text = (t) => `${t.pre}${t.hl}${t.post}`;
+  assert.equal(text(categoryTakeaway([{ category: 'Lending', share: 61.7 }, { category: 'Dexs', share: 15 }], { denominator: 'headline' })), "Lending is DeFi's largest category, with 62% of DeFi TVL");
+  assert.match(text(categoryTakeaway([{ category: 'Lending', share: 30.2 }, { category: 'Dexs', share: 29.8 }], { denominator: 'headline' })), /Lending and Dexs are DeFi's largest categories/);
+  assert.match(text(categoryTakeaway([{ category: 'Lending', share: 70 }], { denominator: 'attributed' })), /of the TVL in these categories/);
+  assert.equal(categoryTakeaway([]), null);
 });

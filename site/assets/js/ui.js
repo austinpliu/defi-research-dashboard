@@ -35,6 +35,18 @@ export function svgIcon(name) {
     moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
     search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5',
     alert: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    note: 'M6 3h9l5 5v13H6zM14 3v6h6M9 13h7M9 17h5',
+    folder: 'M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z',
+    plus: 'M12 5v14M5 12h14',
+    pin: 'M9 4h6l-1 6 4 3v2H6v-2l4-3zM12 15v6',
+    trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',
+    graph: 'M6 6a2 2 0 1 0 0 .01M18 8a2 2 0 1 0 0 .01M12 18a2 2 0 1 0 0 .01M7.7 7l8.6 1M7 7.8l4.2 8.6M17.2 9.8 13 16.3',
+    link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+    close: 'M6 6l12 12M18 6 6 18',
+    sync: 'M20 11a8 8 0 0 0-14.5-4M4 4v4h4M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4',
+    menu: 'M5 12h.01M12 12h.01M19 12h.01',
+    edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
+    eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
   };
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');

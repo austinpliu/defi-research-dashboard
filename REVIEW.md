@@ -4,7 +4,7 @@ _Reviewed 5 Nov 2026 against commit `1f201b4` (main). I read the pipeline, the s
 
 **Status key.** **Fixed** means it's a clear bug, the fix is in this branch, and a test covers it where that's practical. **Open** means it's a judgement call or needs a source checked, so it's left for you, with a suggested fix.
 
-**Tests after the fixes:** `node --test 'tests/*.test.mjs'`: 50 of 50 pass (42 before, plus 8 regression tests for the fixes). The browser smoke test (`tests/browser/smoke.mjs`) passes on desktop and phone. I also opened the ENA, MORPHO, CFG and AAVE token pages to check the new wording, with no page errors.
+**Tests after the fixes:** `node --test 'tests/*.test.mjs'`: 50 of 50 pass (42 before, plus 8 regression tests for the fixes). After the category fix (item 7): 53 of 53. The browser smoke test (`tests/browser/smoke.mjs`) passes on desktop and phone. I also opened the ENA, MORPHO, CFG and AAVE token pages to check the new wording, with no page errors.
 
 **When the fixes show up:** site-side fixes (headlines, CSV, unlock display) apply as soon as this is merged. Pipeline fixes (fee changes, stale DEX marker, catalyst titles) apply on the next data run. Until then the committed data still shows, for example, Ondo's +19.6% and "0.63% of supply" in Catalysts.
 
@@ -69,12 +69,23 @@ Headlines, Snapshot titles, Polymarket titles and coin names go straight into CS
 - **Today's effect is small:** the list total is $297.1B against $296.5B from the USD chart.
 - **Suggested fix:** for `pegType !== 'peggedUSD'`, multiply by `a.price` (requested with `includePrices=true`), and leave out coins with no price. Confirm the unit first in one `PROBE=1` run.
 
-### 7. "TVL by category" shares are of a total twice the size of DeFi TVL (Open)
-`scripts/lib/defillama.mjs:237-253`, headline at `site/assets/js/takeaways.js:132`
+### 7. "TVL by category" shares are of a total twice the size of DeFi TVL (Fixed)
+`scripts/lib/defillama.mjs` (`categoryBreakdown`, `headlineBasis`), `site/assets/js/pages/home.js` (`categoryNote`), `site/assets/js/takeaways.js` (`categoryTakeaway`)
 
-Categories add up every protocol's own TVL, including liquid staking and double-counted deposits (e.g. curators' vaults that also count as lending). The top 14 categories sum to **$190.5B**, while the headline DeFi TVL is **$85.0B**. The headline "Liquid Staking is DeFi's largest category, with 27% of protocol TVL" is internally consistent. But a reader comparing it with the $85B figure next to it would get 64%.
-
-- **Options:** state the denominator on the chart ("shares of $190B summed protocol TVL, which double-counts"), or leave out liquid staking and DefiLlama's double-counted flags so it matches the headline.
+- **Cause:** categories added up every protocol's own TVL. DefiLlama's headline DeFi TVL leaves out two kinds of TVL:
+  - liquid staking;
+  - TVL that another protocol also counts: vault curators and onchain capital allocators that deposit into lending markets, restaking, and yield vaults.
+  
+  So the categories summed to about $197B against an $85B headline. The protocol list has no separate parent entries, so the parent/sub-protocol overlap doesn't arise here.
+- **Fix:** each protocol now contributes only what the headline counts: its TVL minus DefiLlama's own per-protocol `doublecounted` and `liquidstaking` figures. `dcAndLsOverlap` is added back so nothing is subtracted twice. If a response lacks those figures, whole categories are left out by rule instead: Liquid Staking, Liquid Restaking, Yield, Yield Aggregator, Restaking, Risk Curators and Onchain Capital Allocator.
+- **Shares:** they are of the headline TVL when the categories reconcile with it (within 3%). The note under the chart gives the headline, what was left out (liquid staking $X, double counted $Y) and what the categories add up to. If the categories still add up to more than the headline, shares use the categories' own total and the note explains the gap. Shares are never shown as parts of a total they exceed. The headline says "of DeFi TVL" only when the shares are of the headline, and it no longer crowns one category on a tie.
+- **Tests:** `categoryBreakdown` with DefiLlama's per-protocol figures (shares of a 100 headline from a raw sum of 230), with the category-rule fallback, with no headline and with unflagged excess. `categoryTakeaway` wording and ties. 53 of 53 pass.
+- **Verified on live data (run 26, 5 Nov 2026):** DefiLlama's free protocol list has no per-protocol double-count figures or flags (0 of about 7,000 protocols). So the category rules apply:
+  - The raw sum drops from **$198.9B** to **$108.5B**, after leaving out liquid staking ($54.7B), double-counted categories ($34.5B) and $1.2B that is both.
+  - That is still **128%** of the **$84.9B** headline. The remaining overlap is deposits held by two protocols in other categories (for example a lending market and a vault that lends into it). The free data can't separate these.
+  - So the chart shows shares of the categories' own total, and the note says so in plain words: "Measured against the headline, these shares would add up to more than 100%."
+  - The headline reads "Lending is DeFi's largest category, with 48% of the TVL in these categories". Before the fix it was "Liquid Staking … 27% of protocol TVL".
+- **Still open (your call):** getting exactly to the headline needs per-protocol double-count data. DefiLlama serves that to its own site through an undocumented endpoint (`lite/protocols2`), which I didn't use. "Staking Pool" ($14.6B) also stays in, because I couldn't confirm how DefiLlama treats it.
 
 ### 8. DefiLlama's 7/30-day totals can cover a day fewer than the chart shows (Open)
 `scripts/lib/defillama.mjs:592-593`, used by `scripts/fetch-data.mjs:561-571`

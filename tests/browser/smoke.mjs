@@ -47,6 +47,58 @@ for (const [label, opts] of [['desktop', { viewport: { width: 1366, height: 900 
     console.log(`${problems.length ? '✗' : '✓'} ${label.padEnd(7)} ${r.padEnd(28)} blocks=${info.blocks} charts=${info.drawn}/${info.charts}${problems.length ? `  → ${problems.join(' | ')}` : ''}`);
     failures += problems.length ? 1 : 0;
   }
+
+  // ---------- notes: workspace, autosave, links, graph, side panel ----------
+  const check = async (name, fn) => {
+    errors.length = 0;
+    let problem = null;
+    try { problem = await fn(); } catch (e) { problem = e.message.split('\n')[0]; }
+    if (errors.length) problem = [problem, ...errors].filter(Boolean).join(' | ');
+    console.log(`${problem ? '✗' : '✓'} ${label.padEnd(7)} notes: ${name}${problem ? `  → ${problem}` : ''}`);
+    failures += problem ? 1 : 0;
+  };
+  await check('workspace, create, autosave, [[ link', async () => {
+    await page.goto(`${BASE}#/notes`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.nw-welcome');
+    await page.evaluate(async () => { const s = await import('./assets/js/notes/store.js'); await s.init(); await s.createNote('Smoke', 'Target note', 'target'); });
+    await page.click('.nw-actions .tool.primary');
+    await page.fill('.nd-input', 'Smoke test note');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.ne-text');
+    if (label === 'phone') await page.click('.mode-edit');
+    await page.click('.ne-text');
+    await page.keyboard.type('Links to [[Target');
+    await page.waitForSelector('.ne-pop-item');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(1200);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('.ne-text');
+    const text = await page.inputValue('.ne-text');
+    if (text !== 'Links to [[Target note]]') return `after reload the note says ${JSON.stringify(text)}`;
+    const back = await page.evaluate(async () => { const m = await import('./assets/js/notes/model.js'); const s = await import('./assets/js/notes/store.js'); return (m.buildIndex(s.allNotes()).backlinks.get('Smoke/Target note.md') || []).length; });
+    if (back !== 1) return `expected 1 backlink, got ${back}`;
+    if (await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) > 1) return 'notes page scrolls sideways';
+    return null;
+  });
+  await check('graph view draws', async () => {
+    await page.goto(`${BASE}#/notes?view=graph`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.ng-canvas');
+    await page.waitForTimeout(800);
+    const label2 = await page.getAttribute('.ng-canvas', 'aria-label');
+    return /2 notes and 1 link/.test(label2) ? null : `graph says “${label2}”`;
+  });
+  await check('side panel on a protocol page', async () => {
+    await page.goto(`${BASE}#/protocol/${firstProtocol}`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.nc');
+    await page.click('#notes-btn');
+    await page.waitForSelector('#notes-panel:not([hidden])');
+    await page.click('#notes-panel .tool:has-text("New note about")');
+    await page.waitForSelector('#notes-panel .ne-text');
+    const body = await page.inputValue('#notes-panel .ne-text');
+    if (!body.includes(`(#/protocol/${firstProtocol})`)) return 'new note has no link back to the page';
+    await page.keyboard.press('Escape');
+    return null;
+  });
   await ctx.close();
 }
 await browser.close();
