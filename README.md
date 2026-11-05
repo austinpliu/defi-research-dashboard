@@ -18,6 +18,7 @@ Me: a writer and researcher, not an engineer. I can run commands and read code, 
 | **04 Compare** | Pick 2–5 protocols. Overlay TVL, fees, revenue, token price or market cap (in dollars or "growth since the start = 100"), plus a side-by-side metrics table (TVL growth, fees, revenue, market cap ÷ fees and more). The address bar link saves the view. |
 | **05 Catalysts** | Governance votes, scheduled events, launches and upgrades, governance forum posts, protocol blog posts and news about your watchlist, as a dated timeline and a filterable list (token, type, date range, search). Labelled as information, not prediction. Below it, prediction markets: the busiest crypto markets on Polymarket with their current odds, and the prediction-market protocols on DefiLlama. |
 | **06 Screener** | The ~600 largest DeFi protocols. Sort any column, filter by category and chain, search, export CSV. |
+| **10 Fundamentals** | A fundamentals-first checklist for every watchlist protocol and token, labelled as a research aid, not a rating or a buy signal. It has seven checks: revenue reaching holders, revenue relative to size, the fee-switch option, supply overhang, liquidity and float, track record, and narrative vs fundamentals. Each check shows ✓ strong, ~ mixed, ✗ weak or "no data" (with the reason), plus the numbers, a one-sentence explanation and source links. The section has a sortable, filterable overview, a detail page per protocol with four charts, a compact card on protocol and token pages, and a Settings panel for your own thresholds. See [Fundamentals Checklist](#fundamentals-checklist) below. |
 | **07 Glossary** | Every metric explained in one sentence. The same text appears when you hover or tap the (?) next to a number. |
 | **09 Notes** | Your research notes, Obsidian-style: markdown with live preview, `[[links]]`, backlinks, #tags, folders, templates, search and a graph view. Open them from any page with the notes button, and add a chart or the current page to a note. Notes stay in your browser, with optional sync to your own private GitHub repository. See [Notes](#notes) below. |
 | **08 Sources** | When the data was fetched, which requests failed and why, how to fix them, and an automatic check of every source link (with the page title, so you can tell it lands on the right page). |
@@ -185,6 +186,28 @@ You can reuse the same token on both devices, or create a second one with the sa
 - On a device: **Notes** → **Sync** → **Turn off**. This forgets the token in that browser; your notes stay.
 - To cut off access completely: GitHub → **Settings** → **Developer settings** → **Fine-grained tokens** → pick the token → **Delete**. Every device using it stops syncing at once, and nothing else on your account is affected.
 
+## Fundamentals Checklist
+
+A research aid, not a rating or a buy signal. It shows how public numbers compare with thresholds you choose. There's no overall score, and it never estimates a missing number: it says "no data" and why.
+
+- **The rules** are in `site/assets/js/fundamentals/rules.js` and run in your browser, so changing a threshold updates every status at once. The page's "How this works" panel lists every rule and threshold. DECISIONS.md › Fundamentals Checklist explains each choice, including the "narrow price range" rule.
+- **The defaults** are in `site/config/fundamentals-thresholds.json`. Each threshold has a label, default, allowed range and a one-line explanation. Edit that file to change the defaults for everyone.
+- **Your own settings** (Fundamentals › Settings) override the defaults for you only.
+  - **Where they live:** your browser. If notes sync is on, they also go to the same private repo as your notes, as `.dashboard/fundamentals-settings.json`, with no new token. If sync is off, they stay in this browser, and the Settings page says so.
+  - **Conflicts:** if two devices change the same setting, yours is kept and the other value is shown for you to pick. Nothing is overwritten silently.
+  - **Validation:** impossible values aren't saved, for example negative numbers or a ✓ cutoff weaker than the ✗ one.
+  - **Backup:** use Export / Import settings to keep a copy.
+- **Fill these in by hand** (in the public files for everyone, or in Settings for just you):
+  - `site/config/value-accrual.json`: announced fee switches, buybacks or revenue sharing, used by check 3. Add a plan only after confirming it from a primary source, such as a passed vote or an official announcement. Each entry needs `protocol` (the slug from `watchlist.json`), `what`, `status` (proposed, approved or live), `source` (an http(s) link) and `lastChecked` (YYYY-MM-DD), plus an optional `date` and `id`.
+
+    ```json
+    { "id": "aave-buyback", "protocol": "aave", "what": "One sentence on what was approved.", "status": "approved", "date": "2026-01-01", "source": "https://…", "lastChecked": "2026-11-05" }
+    ```
+
+  - `site/config/team-notes.json`: optional team background for check 6, shown as context only. Each entry needs `protocol`, `text`, `sources` (a list of http(s) links) and `lastChecked`.
+  - Both files ship empty, because every entry has to be confirmed by a person.
+- **Not available without a key:** token incentive emissions. DefiLlama's `/emissions` endpoint is paid, so "incentives vs holders revenue" always shows "no data". Ethena has no holders-revenue data on DefiLlama (HTTP 400).
+
 ## How to add a protocol
 
 Everything the dashboard tracks is in one file, **`watchlist.json`**. You can edit it on GitHub directly (open the file, click the pencil icon, edit, then **Commit changes**). Saving it starts a data update automatically, and the new protocol appears on the site within about 10 minutes.
@@ -233,6 +256,8 @@ scripts/lib/                   ← one file per data source + helpers
 site/index.html                ← the website
 site/assets/js/pages/          ← one file per page
 site/assets/js/takeaways.js    ← the rules that write chart headlines
+site/assets/js/fundamentals/   ← the Fundamentals Checklist: rules, settings, sync merge
+site/config/                   ← checklist defaults you can edit (thresholds, value accrual, team notes)
 site/data/                     ← the fetched data (written by the robot)
 .github/workflows/             ← the scheduled data update and the Pages publish
 tests/                         ← automated checks (run: node --test 'tests/*.test.mjs')

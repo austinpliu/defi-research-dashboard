@@ -46,7 +46,9 @@ function collect(value, where, out) {
 }
 
 async function main() {
-  const files = ['market.json', 'catalysts.json', 'index.json', 'screener.json', 'coins.json', 'predictions.json'].map((f) => [f, join(OUT, f)]);
+  const files = ['market.json', 'catalysts.json', 'index.json', 'screener.json', 'coins.json', 'predictions.json', 'fundamentals.json'].map((f) => [f, join(OUT, f)]);
+  // hand-edited sources for the Fundamentals Checklist (announced plans, team notes)
+  for (const f of ['value-accrual.json', 'team-notes.json']) files.push([`config/${f}`, join(ROOT, 'site', 'config', f)]);
   for (const dir of ['protocols', 'tokens']) {
     const d = join(OUT, dir);
     if (existsSync(d)) for (const f of readdirSync(d)) if (f.endsWith('.json')) files.push([`${dir}/${f}`, join(d, f)]);

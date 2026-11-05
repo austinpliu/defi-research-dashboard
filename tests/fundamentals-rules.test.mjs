@@ -296,3 +296,23 @@ test('takeaway: names the top holders-revenue yield, handles ties and the all-ze
   assert.match(none.hl, /returned revenue to token holders/);
   assert.equal(overviewTakeaway([]), null);
 });
+
+// ---------- every number on the published checklist has a working source link ----------
+test('every number in the real fundamentals.json resolves to an http(s) source', () => {
+  const file = new URL('../site/data/fundamentals.json', import.meta.url);
+  const data = JSON.parse(readFileSync(file));
+  const rows = evaluateAll(data.protocols, T, { now: Date.parse(data.generatedAt) / 1000 });
+  assert.ok(rows.length > 0);
+  const problems = [];
+  for (const r of rows) {
+    for (const c of CHECKS) {
+      for (const n of r.checks[c.id].numbers) {
+        const keys = [].concat(n.src || []);
+        const recs = keys.map((k) => r.p.sources[k]);
+        const urls = [...recs.map((x) => x?.page || x?.api), ...(n.links || [])];
+        if (!urls.length || recs.some((x) => !x) || urls.some((u) => !/^https?:\/\//.test(u || ''))) problems.push(`${r.p.slug} · ${c.id} · ${n.label}`);
+      }
+    }
+  }
+  assert.deepEqual(problems, []);
+});
