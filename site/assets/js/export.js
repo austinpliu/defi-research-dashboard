@@ -14,7 +14,11 @@ function safeName(s) {
 export function toCSV(columns, rows) {
   const cell = (v) => {
     if (v === null || v === undefined) return '';
-    const s = typeof v === 'number' ? String(v) : String(v);
+    let s = String(v);
+    // Text from feeds and APIs that starts with = + - @ (or a tab/CR) would run as a formula
+    // when the CSV is opened in Excel or Sheets, so it's prefixed with ' to stay text.
+    // Numbers, including negative ones, are left alone.
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s) && !Number.isFinite(Number(s))) s = `'${s}`;
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [columns.map((c) => cell(c.label)).join(',')];
