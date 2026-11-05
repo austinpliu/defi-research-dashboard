@@ -25,6 +25,11 @@ _Updated as work happens. Last update: 5 Nov 2026 (session: category double coun
   - **Backup and sync:** zip export and import (an Obsidian vault), and optional sync to your own private GitHub repo with a fine-grained token. Sync handles conflicts safely, keeping both versions.
   - **Tests:** 76 unit tests, covering link parsing, renames, backlinks, sync conflicts against a fake GitHub, zip, and privacy guards. The browser smoke test covers the notes page, the graph and the side panel on desktop and phone.
 
+- **Fundamentals Checklist (Nov 2026, in progress on `claude/fundamentals-checklist`):**
+  - **Stage 1 done:** the pipeline writes `site/data/fundamentals.json` with each protocol's inputs and sources, plus 5 years of weekly prices from DefiLlama's coins API.
+  - **Stage 2 done:** the rules engine (`site/assets/js/fundamentals/rules.js`), the thresholds config, and the empty hand-edited `value-accrual.json` and `team-notes.json`. 31 unit tests cover every rule, empty data, zero revenue, ties and threshold validation (107 tests in all).
+  - **Next:** the page and detail views (stage 3), the settings panel with sync (stage 4), and smoke tests and docs (stage 5).
+
 ## Not done / known gaps
 - **Notes, not yet:**
   - No attachments: images in notes show as links and aren't stored.

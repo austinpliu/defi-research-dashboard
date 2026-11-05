@@ -1,0 +1,13 @@
+{
+  "about": "Announced value-accrual plans (fee switches, buybacks, burns, revenue sharing) for the Fundamentals Checklist's fee-switch check. Edit by hand or in the dashboard's Settings panel (your edits there override this file for you only). Every entry needs a source link (http or https) and the date you last checked it. Only record plans you have confirmed from a primary source, such as a passed governance vote or an official announcement.",
+  "version": 1,
+  "fields": {
+    "protocol": "the DefiLlama slug from config/watchlist.json, e.g. aave",
+    "what": "one plain sentence on what was announced",
+    "status": "proposed, approved or live",
+    "date": "when it was announced (YYYY-MM-DD)",
+    "source": "link to the proposal, vote or announcement",
+    "lastChecked": "when you last confirmed it (YYYY-MM-DD)"
+  },
+  "entries": []
+}

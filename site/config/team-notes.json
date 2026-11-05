@@ -1,0 +1,11 @@
+{
+  "about": "Optional team-background notes for the Fundamentals Checklist's track-record check. Edit by hand or in the dashboard's Settings panel (your edits there override this file for you only). Every note needs at least one source link (http or https). Shown as context only; it doesn't change any status.",
+  "version": 1,
+  "fields": {
+    "protocol": "the DefiLlama slug from config/watchlist.json, e.g. aave",
+    "text": "one or two plain sentences",
+    "sources": "list of links backing the note",
+    "lastChecked": "when you last confirmed it (YYYY-MM-DD)"
+  },
+  "entries": []
+}
