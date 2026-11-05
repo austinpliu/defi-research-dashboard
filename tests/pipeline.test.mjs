@@ -20,7 +20,7 @@ test('pipeline writes every file with sources and handles failures honestly', ()
       stdio: 'pipe',
     });
     const read = (f) => JSON.parse(readFileSync(join(out, f), 'utf8'));
-    for (const f of ['market.json', 'catalysts.json', 'index.json', 'meta.json', 'screener.json', 'coins.json', 'predictions.json', 'protocols/alpha.json', 'tokens/alpha-token.json']) {
+    for (const f of ['market.json', 'catalysts.json', 'index.json', 'meta.json', 'screener.json', 'coins.json', 'predictions.json', 'fundamentals.json', 'protocols/alpha.json', 'tokens/alpha-token.json']) {
       assert.ok(existsSync(join(out, f)), `${f} written`);
     }
     const market = read('market.json');

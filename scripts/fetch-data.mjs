@@ -21,6 +21,7 @@ import { fetchFeed, feedItems } from './lib/feeds.mjs';
 import { fetchCoinMarkets, buildCoinRows, fetchPredictionEvents, buildPredictionEvents, predictionProtocols } from './lib/markets.mjs';
 import { probeEmissionsRepo, EMISSIONS_REPO, loadManualUnlocks, buildTokenUnlocks } from './lib/unlocks.mjs';
 import { sourceRecord, derivedRecord, carryForward } from './lib/sources.mjs';
+import { fetchWeeklyPrices, fundamentalsInputs } from './lib/fundamentals.mjs';
 import { roundSmart, num, slugify, normSeries, dailySeries, trimDays, compactSeries } from './lib/util.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -743,6 +744,16 @@ async function main() {
     })),
   };
 
+  // 10b. Fundamentals Checklist inputs (statuses are computed in the browser) ---
+  console.log('\n== Fundamentals inputs');
+  const fundamentals = { generatedAt: new Date().toISOString(), protocols: [] };
+  for (const p of protocols) {
+    const weekly = p.token?.id ? await fetchWeeklyPrices(http, p.token.id) : null;
+    if (weekly && !weekly.source.ok) problem('info', `Weekly price history for ${p.token.id} unavailable (${weekly.source.error}); the price-range check shows no data`);
+    fundamentals.protocols.push(fundamentalsInputs({ entry: p.entry, doc: p.doc, token: p.token, weekly }));
+  }
+  if (PROBE) console.log(`   ↳ weekly price points: ${fundamentals.protocols.map((f) => `${f.tokenId}:${f.priceWeekly.length}`).join(', ')}`);
+
   // 11. Write everything ---------------------------------------------------
   console.log('\n== Writing files');
   const keepProtocols = new Set();
@@ -764,6 +775,7 @@ async function main() {
   writeJSON(join(OUT, 'market.json'), market);
   if (screener) writeJSON(join(OUT, 'screener.json'), { generatedAt: new Date().toISOString(), ...screener });
   writeJSON(join(OUT, 'catalysts.json'), catalysts);
+  writeJSON(join(OUT, 'fundamentals.json'), fundamentals);
   writeJSON(join(OUT, 'coins.json'), coinsDoc);
   writeJSON(join(OUT, 'predictions.json'), predictions);
   writeJSON(join(OUT, 'index.json'), index);
