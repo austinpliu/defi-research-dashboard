@@ -53,6 +53,7 @@ _Updated as work happens. Last update: 5 Nov 2026 (session: category double coun
     - Ethena's holders revenue (DefiLlama answers HTTP 400);
     - Ondo's and Centrifuge's TVL history (DefiLlama has none), so their track record is "no data".
   - **To fill in by hand:** `site/config/value-accrual.json` (confirmed fee switches and buybacks) and `site/config/team-notes.json`. Both ship empty. See README › Fundamentals Checklist.
+- **Focus outline fix (Nov 2026):** the main content area no longer shows a blue outline when the router focuses it on load or page change; buttons, links and inputs keep theirs.
 
 ## Not done / known gaps
 - **Notes, not yet:**
