@@ -22,7 +22,8 @@ Choices made while building this unattended, with the reason for each. Newest at
 - **DEX liquidity:** DexScreener `/token-pairs/v1/{chainId}/{address}` first, using a small table that maps CoinGecko platform ids to DexScreener chain ids. GeckoTerminal is the fallback; its `/networks` list maps CoinGecko platform ids to its own network ids, so that mapping isn't guessed. (The first plan was GeckoTerminal first; the live runs showed it rate-limits too quickly.)
 - **Governance:** Snapshot's public GraphQL hub. Space ids come from DefiLlama's `governanceID` field or CoinGecko's `links.snapshot_url` (never guessed); `watchlist.json` can add more.
 - **News:** RSS feeds from CoinDesk, The Block, Decrypt, Cointelegraph, Blockworks, DL News and The Defiant; protocol governance forums via Discourse's standard `/latest.rss`, and Medium blogs via `/feed`. Feeds that fail are listed on the Sources page with the error. Only headline, date, a short snippet and the link are stored.
-- **User-Agent:** requests identify as `defi-research-dashboard/1.0 (+repo URL)`, with no personal details.
+- **Repo renamed (Nov 2026):** the repository is now `austinpliu/defidashboard`; README, the site footer and the pipeline's User-Agent use the new name (GitHub redirects the old one).
+- **User-Agent:** requests identify as `defidashboard/1.0 (+repo URL)`, with no personal details.
 
 ## Data rules
 
@@ -107,7 +108,8 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
 - **Categories use the headline's basis.** DefiLlama's headline DeFi TVL leaves out liquid staking and double-counted TVL, so each protocol now adds only what the headline counts. That is its TVL minus DefiLlama's per-protocol `doublecounted` and `liquidstaking` figures, with `dcAndLsOverlap` added back.
   - I couldn't confirm from this sandbox that the protocol list carries those figures. The pipeline's list of non-chain keys already names them, and DefiLlama's site uses them for its "double count" and "liquid staking" toggles.
   - If a run's list lacks them, the pipeline says so on the Sources page and leaves out whole categories by rule: Liquid Staking, Liquid Restaking, Yield, Yield Aggregator, Restaking, Risk Curators and Onchain Capital Allocator.
-  - "Staking Pool" is not on that list. I couldn't confirm how DefiLlama treats it, so it stays in.
+  - "Staking Pool" ($14.6B in run 26) is not on that list and stays in the category totals. **Its treatment is unconfirmed**: I couldn't find whether DefiLlama's headline counts it, and you chose (5 Nov 2026) to keep it in rather than guess.
+  - DefiLlama's undocumented `lite/protocols2` feed would likely close the remaining gap; you chose (5 Nov 2026) to keep to documented sources, so it isn't used.
 - **Live result (run 26):** the free protocol list carries no per-protocol double-count data (0 protocols). Category rules bring the total from $198.9B to $108.5B, still 128% of the $84.9B headline. So shares are of the categories' own total, and the Overview note explains why they can't be of the headline. I didn't use DefiLlama's undocumented `lite/protocols2` endpoint to close the gap (same rule as for unlocks: documented endpoints only).
 - **Shares are of the headline only when the totals reconcile (within 3%).** Otherwise they are of the categories' own total, and the note under the chart says how far apart the two are and why. A share must never be part of a total it exceeds. The 3% allowance covers DefiLlama totalling each chain separately; chain shares already match the headline to within 0.3%.
 

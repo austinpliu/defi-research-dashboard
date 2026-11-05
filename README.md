@@ -62,13 +62,13 @@ You need [Node.js](https://nodejs.org) version 18 or newer (the "LTS" download i
 1. Download the code: on GitHub press **Code → Download ZIP** and unzip it, or run:
 
    ```bash
-   git clone https://github.com/austinpliu/defi-research-dashboard.git
+   git clone https://github.com/austinpliu/defidashboard.git
    ```
 
 2. Open a terminal in the folder:
 
    ```bash
-   cd defi-research-dashboard
+   cd defidashboard
    ```
 
 3. Start the website:
@@ -101,7 +101,7 @@ From then on:
 
 - Every 6 hours the **Update data** action fetches fresh numbers, saves them, and publishes the site.
 - To update right now: **Actions** tab → **Update data** → **Run workflow**.
-- Your site's address appears on the **Settings → Pages** screen (it looks like `https://austinpliu.github.io/defi-research-dashboard/`).
+- Your site's address appears on the **Settings → Pages** screen (it looks like `https://austinpliu.github.io/defidashboard/`).
 
 If a run fails, the **Actions** tab shows a red ✗; click it to see which step failed. The website keeps showing the last good data.
 
