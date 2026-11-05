@@ -137,6 +137,84 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
   - **Tests:** sync can't reach GitHub from the build sandbox, so it is tested against a fake GitHub that enforces the same `sha` checks.
 - **Import never overwrites:** a different note with the same name comes in as "… (imported)". Obsidian's `.obsidian/` folder and non-markdown files are skipped and counted.
 
+## Fundamentals Checklist (Nov 2026)
+
+A research aid, not a rating or a buy signal. Each check says how the data compares with *your* thresholds, and "no data" (with the reason) whenever a number is missing. Nothing is estimated.
+
+- **Where the work happens:** the pipeline only gathers inputs and their sources into `site/data/fundamentals.json`. The statuses are computed in the browser by `site/assets/js/fundamentals/rules.js`, so a threshold change applies at once. The same file is unit-tested in Node.
+- **Thresholds:** one documented file, `site/config/fundamentals-thresholds.json`. Each entry has a label, unit, default, min, max and a one-line explanation, and the "How this works" panel renders straight from it. Strong/weak pairs must stay in order: for "higher is better" the strong cutoff must be higher than the weak one, otherwise lower. Equal cutoffs are rejected too, because they leave no room for ~. A bad value (not a number, negative, out of bounds, or out of order) falls back to the default, with a message saying so. Out-of-order pairs reset both values. Overrides for keys that no longer exist are ignored.
+- **Annualized means the last complete 30 days × 365 ÷ 30.** Every window must have every day present, or the number is "no data". Partial windows are never scaled up.
+- **1. Revenue reaching holders:** DefiLlama's `dailyHoldersRevenue` from `/summary/fees/{slug}` is keyless. It works for every watchlist protocol except Ethena, which answers HTTP 400.
+  - **Statuses:**
+    - Revenue of 0 → ✗.
+    - Holders revenue of 0 → ✗.
+    - Holders' share below the weak line → ✗.
+    - Share at or above the strong line *and* at least the minimum yearly dollars → ✓. The dollar floor stops a big share of a tiny revenue from counting.
+    - Anything else → ~.
+  - **The 90-day trend** compares the last 30 days with days 60–90 before now.
+  - **Incentives vs holders revenue is "no data" for all.** Emissions are only on DefiLlama's paid `/emissions` (HTTP 402). There's no keyless source for incentive spend in dollars.
+- **2. Revenue relative to size:** market cap ÷ annualized revenue, like a P/E ratio. At or under the strong line → ✓, at or over the weak line → ✗, so a value exactly on a line counts as reaching it.
+  - Zero revenue → ✗, because the market cap is backed by no revenue at all.
+  - Revenue as a % of TVL is shown alongside but doesn't affect the status: TVL isn't comparable across lending, perps and RWA.
+  - The watchlist rank sorts by that ratio, lowest first. Ties share a rank (1, 2, 2, 4), and protocols with no revenue or no market cap are unranked.
+- **3. Value-accrual switch:**
+  - **Pattern:** annualized revenue ≥ the minimum, and holders' share at or under "little or nothing". This is detected automatically.
+  - **Statuses:**
+    - The pattern plus a confirmed entry in `site/config/value-accrual.json` (or your Settings) → ✓.
+    - The pattern alone → ~.
+    - Below the revenue minimum, or value already reaching holders → "n/a" (—), not ✗. There's no option to price in those cases, and calling that "weak" would be misleading.
+  - Every entry needs an http(s) source and a "last checked" date. The file ships empty: I didn't record any plans, because each one has to be confirmed by hand from a primary source.
+- **4. Supply overhang:**
+  - **Inputs:** circulating as % of max supply, market cap ÷ FDV, and unlocks over the next 12 months as % of circulating. Unlocks come from the hand-checked `unlocks.json` and count only events with a published size. Releases of unknown size are listed, not guessed.
+  - **If the schedule is unconfirmed:** whatever isn't circulating yet (max − circulating) is the most that could ever unlock. That ceiling settles the question only when it's already under the strong line (e.g. SKY, about 0.2%). Otherwise the overhang stays unknown and the check is ~.
+  - **Statuses:** circulating below the weak line, or unlocks above the weak line → ✗. Circulating at or above the strong line (or no max supply) *and* unlocks at or under the strong line → ✓. No max supply and no schedule → "no data".
+  - **Range rule:** the longest stretch, ending with the latest week, in which the highest weekly price is at most `supply.rangeBand` × the lowest (2× by default). It uses DefiLlama's weekly price history over up to 5 years, and is shown as years plus the low–high band. It's context only and doesn't change the status, because a long sideways range can mean either quiet accumulation or no interest.
+- **5. Liquidity and float:** DEX liquidity (pool reserves from the existing DEX data) and 24h volume across all exchanges, both as % of market cap.
+  - DEX liquidity under the weak line → ✗ ("thin").
+  - Liquidity at or above the strong line *and* volume at or above its line → ✓.
+  - Volume but no reported DEX liquidity → ~, not ✗. HYPE trades mostly on Hyperliquid's own order book, which isn't a DEX pool.
+- **6. Track record:**
+  - **Inputs:**
+    - Age is measured from the first non-zero TVL point on DefiLlama.
+    - The drawdown is the worst month-end TVL ÷ its running peak.
+    - Hack losses are net of returned funds, from DefiLlama's hacks list.
+  - **Statuses:** younger than the weak line, net losses over the line, or a drawdown below the weak line → ✗. Older than the strong line with the drawdown at or above its line → ✓.
+  - **Example:** Maple's TVL really did fall to almost nothing for a few weeks in mid-2022 (DefiLlama shows $0 at the end of June 2022), so it is ✗. That's the data, not a glitch: the daily series falls from $150M to $0 over a week.
+  - **Team notes** (`site/config/team-notes.json`, or Settings) are context with sources and never change the status.
+- **7. Narrative vs fundamentals:**
+  - **Measure:** the 90-day price change minus the change in revenue between the last 90 days and the 90 before.
+  - **Statuses:** the price ahead by more than `narrative.aheadPts` → ✗. Revenue ahead by more than `narrative.lagPts` → ✓ ("possibly overlooked"). Anything else → ~.
+  - 30-day changes are shown too.
+  - An incomplete or zero earlier window → "no data", because a % change from zero is meaningless.
+- **No overall score.** The overview shows the seven statuses side by side and never adds them up. A total would turn a research aid into a rating.
+- **Charts without dual axes:**
+  - "Market cap vs revenue" is drawn as a single ratio line: market cap ÷ rolling 30-day annualized revenue.
+  - "Price vs revenue" puts price and rolling 30-day revenue on one axis, both indexed to 100.
+  - Supply is a bar chart in tokens: circulating, total, max, and unlocks in the next 12 months when their size is known.
+- **Deep links use query parameters** (`?check=supply`, `?how=1`), because the site's router owns the `#` part of the URL.
+- **"New note from this checklist"** uses the notes workspace's quick capture: an Inbox note with every status, number and source link, a link back to the page, and an empty "My take" section.
+- **Nav:** Fundamentals sits after Screener, ahead of the reference pages, but its section number is 10 because it was added last.
+- **Settings: defaults vs yours.**
+  - The public files in `site/config/` are the defaults. Your edits are stored as overrides on top of them, so they apply to you only:
+    - thresholds you changed;
+    - entries you added or edited, by id;
+    - ids of default entries you deleted.
+  - So an entry added to the public file later still shows up for you, unless you deleted it.
+  - An empty threshold field, or one set back to its default, removes the override.
+- **Settings validation:** threshold edits apply as you type, but an impossible value is never saved. Impossible means not a number, negative, out of bounds, or a ✓ cutoff no stronger than the ✗ one. The checklist keeps the last good value, the field shows why, and the live preview shows the default there.
+  - Value-accrual entries need a protocol, a one-sentence description, an http(s) source and a "last checked" date. Team notes need text, at least one http(s) source and a date.
+  - A stored entry that fails validation is skipped, with a message, instead of breaking the page.
+  - A settings file that can't be read falls back to the defaults and says so. The file itself is kept untouched until you save.
+- **Settings storage and sync:**
+  - **Where it's stored:** one JSON file, `.dashboard/fundamentals-settings.json`, kept in the notes store's IndexedDB `meta` table (under `sys:`), not with the notes. The notes tree, search, graph, links, backlinks and the zip export never see it. Settings have their own Export and Import.
+  - **Sync:** notes sync also lists and uploads `.dashboard/*.json` in the same private repo, with the same token, the same `sha` checks and the same three-way plan.
+  - **Conflicts:** when both sides changed the file, it is merged by content, per threshold and per entry id, against the version both last agreed on (fetched from git by its blob hash). One-sided changes combine.
+    - If both changed the same setting, your value is kept. The other device's value is saved in `.dashboard/conflicts/…json`, on both sides, and the Settings page offers "Use theirs" for each one.
+    - Nothing is overwritten without a record. The merge is unit-tested, and tested end to end against a fake GitHub.
+  - **Sync off:** settings save in this browser only, and the Settings page says so, with a button to set up sync.
+- **Import replaces your settings only after a confirmation** that says what's in the file and how many values in it are invalid. Export writes only your overrides, not the defaults.
+- **Overview takeaway:** names the protocol returning the most holders revenue relative to its market cap (annualized holders revenue ÷ market cap), and how many send none. Two protocols tie when their yields are equal at one decimal, as shown.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.

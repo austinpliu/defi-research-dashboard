@@ -1,0 +1,37 @@
+{
+  "about": "Defaults for the Fundamentals Checklist (a research aid, not a rating). Each check is ✓ strong, ~ mixed, ✗ weak or no data. Edit the defaults here; your own changes made in the dashboard's Settings panel override these for you only. 'better' says which direction is stronger, and each 'order' pair must keep the strong cutoff stronger than the weak one.",
+  "version": 1,
+  "thresholds": {
+    "holders.shareStrong": { "check": "holders", "label": "Holders’ share of revenue for ✓", "unit": "%", "default": 50, "min": 0, "max": 100, "help": "At least this share of the protocol’s revenue goes to token holders (e.g. buybacks) for a ✓." },
+    "holders.shareWeak": { "check": "holders", "label": "Holders’ share of revenue below which ✗", "unit": "%", "default": 10, "min": 0, "max": 100, "help": "Less than this share reaching holders counts as ✗." },
+    "holders.minAnnual": { "check": "holders", "label": "Minimum yearly holders revenue for ✓", "unit": "usd", "default": 1000000, "min": 0, "max": 1000000000000, "help": "Annualized holders revenue must reach this many dollars to count as ✓, so a big share of a tiny revenue doesn’t." },
+    "size.peStrong": { "check": "size", "label": "Market cap ÷ revenue for ✓", "unit": "x", "default": 25, "min": 0, "max": 100000, "help": "At or below this market cap ÷ annualized revenue (like a price-to-earnings ratio) is ✓." },
+    "size.peWeak": { "check": "size", "label": "Market cap ÷ revenue for ✗", "unit": "x", "default": 100, "min": 0, "max": 100000, "help": "At or above this ratio is ✗: the market pays a lot for each dollar of revenue." },
+    "call.minRevenue": { "check": "call", "label": "Yearly revenue that makes a fee switch matter", "unit": "usd", "default": 10000000, "min": 0, "max": 1000000000000, "help": "A protocol needs at least this much annualized revenue for “little reaches holders yet” to look like an option on a future fee switch." },
+    "call.maxHoldersShare": { "check": "call", "label": "Holders’ share that counts as “little or nothing”", "unit": "%", "default": 10, "min": 0, "max": 100, "help": "At or below this share of revenue reaching holders, value accrual is treated as not switched on yet." },
+    "supply.circStrong": { "check": "supply", "label": "Circulating share of max supply for ✓", "unit": "%", "default": 85, "min": 0, "max": 100, "help": "At least this much of the maximum supply already circulating is ✓ (little left to dilute)." },
+    "supply.circWeak": { "check": "supply", "label": "Circulating share of max supply below which ✗", "unit": "%", "default": 50, "min": 0, "max": 100, "help": "Less than this circulating means most of the supply is still to come: ✗." },
+    "supply.unlockStrong": { "check": "supply", "label": "Unlocks in 12 months, % of circulating, for ✓", "unit": "%", "default": 2, "min": 0, "max": 1000, "help": "Confirmed unlocks over the next year at or below this share of today’s circulating supply is ✓." },
+    "supply.unlockWeak": { "check": "supply", "label": "Unlocks in 12 months, % of circulating, for ✗", "unit": "%", "default": 10, "min": 0, "max": 1000, "help": "Unlocks above this share of circulating supply in the next year is ✗ (supply overhang)." },
+    "supply.rangeBand": { "check": "supply", "label": "Price band for “traded in a narrow range”", "unit": "x", "default": 2, "min": 1.01, "max": 100, "help": "The price counts as range-bound while its highest weekly price is at most this many times its lowest (2 = within a 2× band). Shown for context; it doesn’t change the status." },
+    "liquidity.liqStrong": { "check": "liquidity", "label": "DEX liquidity, % of market cap, for ✓", "unit": "%", "default": 2, "min": 0, "max": 100, "help": "DEX liquidity at least this share of market cap (and enough volume) is ✓." },
+    "liquidity.liqWeak": { "check": "liquidity", "label": "DEX liquidity, % of market cap, below which ✗", "unit": "%", "default": 0.5, "min": 0, "max": 100, "help": "Liquidity below this share of market cap is thin: the price can move sharply either way. ✗." },
+    "liquidity.volStrong": { "check": "liquidity", "label": "24h volume, % of market cap, needed for ✓", "unit": "%", "default": 1, "min": 0, "max": 1000, "help": "Daily trading volume (all exchanges) must be at least this share of market cap for ✓." },
+    "track.ageStrong": { "check": "track", "label": "Years live for ✓", "unit": "years", "default": 3, "min": 0, "max": 50, "help": "Live at least this long (since its first TVL on DefiLlama) for ✓." },
+    "track.ageWeak": { "check": "track", "label": "Years live below which ✗", "unit": "years", "default": 1, "min": 0, "max": 50, "help": "Younger than this is ✗: no track record through a downturn yet." },
+    "track.retentionStrong": { "check": "track", "label": "TVL kept at the worst drawdown for ✓", "unit": "%", "default": 25, "min": 0, "max": 100, "help": "At its worst point, TVL stayed at least this share of its earlier peak: ✓." },
+    "track.retentionWeak": { "check": "track", "label": "TVL kept at the worst drawdown below which ✗", "unit": "%", "default": 10, "min": 0, "max": 100, "help": "Falling below this share of its earlier peak at some point is ✗." },
+    "track.hackLossWeak": { "check": "track", "label": "Net hack losses for ✗", "unit": "usd", "default": 10000000, "min": 0, "max": 1000000000000, "help": "Hack losses not returned, above this many dollars in total, make the track record ✗." },
+    "narrative.aheadPts": { "check": "narrative", "label": "Price ahead of revenue for ✗ (percentage points)", "unit": "pts", "default": 50, "min": 0, "max": 10000, "help": "If the 90-day price change beats the 90-day revenue change by more than this many points, the price is running on narrative: ✗." },
+    "narrative.lagPts": { "check": "narrative", "label": "Revenue ahead of price for ✓ (percentage points)", "unit": "pts", "default": 30, "min": 0, "max": 10000, "help": "If revenue grew this many points more than the price over 90 days, fundamentals are ahead of the price (possibly overlooked): ✓." }
+  },
+  "order": [
+    { "strong": "holders.shareStrong", "weak": "holders.shareWeak", "better": "higher" },
+    { "strong": "size.peStrong", "weak": "size.peWeak", "better": "lower" },
+    { "strong": "supply.circStrong", "weak": "supply.circWeak", "better": "higher" },
+    { "strong": "supply.unlockStrong", "weak": "supply.unlockWeak", "better": "lower" },
+    { "strong": "liquidity.liqStrong", "weak": "liquidity.liqWeak", "better": "higher" },
+    { "strong": "track.ageStrong", "weak": "track.ageWeak", "better": "higher" },
+    { "strong": "track.retentionStrong", "weak": "track.retentionWeak", "better": "higher" }
+  ]
+}

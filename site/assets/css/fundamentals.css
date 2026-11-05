@@ -1,0 +1,107 @@
+/* Fundamentals Checklist. Status colours are reserved for status and always come with an icon and a word. */
+:root { --st-good-bg: #dff3e4; --st-good-ink: #0b5a1f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --st-good-bg: #12321c; --st-good-ink: #8fe3a5; } }
+:root[data-theme="dark"] { --st-good-bg: #12321c; --st-good-ink: #8fe3a5; }
+
+.fc-st { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 2px 9px 2px 7px; font-size: 12.5px; font-weight: 700; line-height: 1.5; white-space: nowrap; border: 1px solid transparent; }
+.fc-ico { font-weight: 800; font-size: 13px; min-width: 0.8em; text-align: center; }
+.fc-st.st-strong { background: var(--st-good-bg); color: var(--st-good-ink); }
+.fc-st.st-mixed { background: var(--warn-bg); color: var(--warn-ink); }
+.fc-st.st-weak { background: var(--bad-bg); color: var(--bad-ink); }
+.fc-st.st-nodata { background: transparent; color: var(--muted); border: 1px dashed var(--border-strong); font-weight: 600; }
+.fc-st.st-nodata .fc-ico { font-size: 11.5px; font-weight: 600; }
+.fc-st.st-na { background: var(--surface-2); color: var(--muted); }
+
+.fc-aid { margin-bottom: 14px; }
+.fc-notice { margin-bottom: 14px; }
+.fc-notice ul { margin: 6px 0 0 18px; padding: 0; }
+.fc-overview .takeaway { margin-bottom: 6px; }
+a.fc-cell { text-decoration: none; display: inline-block; }
+a.fc-cell:hover .fc-st { outline: 2px solid var(--border-strong); }
+.fc-overview .table-wrap th { white-space: normal; min-width: 92px; vertical-align: bottom; }
+
+.fc-strip { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.fc-strip-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; }
+.fc-mini-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.fc-mini-list a { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); text-decoration: none; font-size: 13.5px; font-weight: 600; }
+.fc-mini-list a:hover span:last-child { text-decoration: underline; }
+.fc-mini .src { margin-top: 10px; }
+
+.fc-grid { margin-bottom: 26px; }
+.fc-check { height: 100%; scroll-margin-top: 90px; }
+.fc-check::before { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: var(--border-strong); }
+.fc-check.st-strong::before { background: var(--st-good-ink); }
+.fc-check.st-mixed::before { background: var(--yellow-mark); }
+.fc-check.st-weak::before { background: var(--down); }
+.fc-head { display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 10px; }
+.fc-head .fc-st { margin-top: 3px; }
+.fc-why { margin: 0; font: 650 16px/1.4 var(--font-head); color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.fc-rank { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); }
+.fc-nums { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.fc-nums th, .fc-nums td { text-align: left; padding: 6px 6px 6px 0; border-top: 1px solid var(--grid); vertical-align: top; overflow-wrap: anywhere; }
+.fc-nums thead th { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 700; border-top: 0; }
+.fc-nums thead th:nth-child(1) { width: 50%; }
+.fc-nums thead th:nth-child(2) { width: 22%; }
+.fc-nums tbody th { font-weight: 600; color: var(--ink-2); }
+.fc-nums td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; padding-right: 12px; }
+.fc-nums td.muted { font-weight: 500; }
+.fc-note { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.fc-text { font-weight: 500; text-align: left; display: block; }
+.fc-links { overflow-wrap: anywhere; }
+.fc-flash { animation: fc-flash 1.6s ease-out 1; }
+@keyframes fc-flash { 0% { box-shadow: 0 0 0 3px var(--mark); } 100% { box-shadow: var(--shadow); } }
+
+.fc-how { margin-top: 18px; scroll-margin-top: 90px; }
+.fc-how > summary { cursor: pointer; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.fc-how > summary::-webkit-details-marker { display: none; }
+.fc-how-t { font: 800 20px/1.2 var(--font-head); }
+.fc-how-t::after { content: ' ▾'; color: var(--muted); font-size: 14px; }
+.fc-how[open] .fc-how-t::after { content: ' ▴'; }
+.fc-rules { padding-left: 20px; font-size: 14px; line-height: 1.5; }
+.fc-rules li { margin: 6px 0; }
+.fc-thresholds { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fc-thresholds th, .fc-thresholds td { text-align: left; padding: 7px 10px 7px 0; border-top: 1px solid var(--grid); vertical-align: top; }
+.fc-thresholds thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border-top: 0; }
+.fc-thresholds td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fc-thresholds tbody th { font-weight: 600; min-width: 180px; }
+.fc-changed th, .fc-changed td:nth-child(2) { color: var(--ink); }
+.fc-changed td:nth-child(2) { font-weight: 800; }
+.fc-tag { display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 4px; background: var(--marker); color: #0e0e0c; }
+
+/* settings */
+.fs-section { margin-bottom: 18px; }
+.fs-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto; gap: 6px 14px; align-items: start; padding: 10px 0; border-top: 1px solid var(--grid); }
+.fs-row:first-of-type { border-top: 0; }
+.fs-row label { font-weight: 650; font-size: 14px; }
+.fs-help { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--muted); }
+.fs-input { display: flex; align-items: center; gap: 6px; }
+.fs-input input { width: 100%; max-width: 160px; font: inherit; font-variant-numeric: tabular-nums; padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink); }
+.fs-input input[aria-invalid="true"] { border-color: var(--down); box-shadow: 0 0 0 2px var(--bad-bg); }
+.fs-unit { font-size: 12.5px; color: var(--muted); }
+.fs-default { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.fs-err { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--bad-ink); background: var(--bad-bg); padding: 5px 8px; border-radius: 6px; }
+.fs-group { font: 800 15px/1.2 var(--font-head); margin: 16px 0 2px; }
+.fs-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.fs-status { font-size: 13px; }
+.fs-entries { list-style: none; margin: 0 0 12px; padding: 0; }
+.fs-entries li { border-top: 1px solid var(--grid); padding: 10px 0; display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.fs-entries li > div { min-width: 0; flex: 1 1 260px; overflow-wrap: anywhere; }
+.fs-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.fs-form .wide { grid-column: 1 / -1; }
+.fs-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }
+.fs-form input, .fs-form select, .fs-form textarea { font: inherit; font-weight: 400; padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--ink); min-width: 0; }
+.fs-form textarea { min-height: 64px; resize: vertical; }
+.fs-conflict { border: 1px solid var(--warn-ink); }
+@media (max-width: 600px) {
+  .fs-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .fs-row .fs-default { grid-column: 1 / -1; }
+  .fs-form { grid-template-columns: minmax(0, 1fr); }
+  .fc-nums thead th:nth-child(1) { width: 44%; }
+  .fc-why { font-size: 15px; }
+}
+.fc-preview { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fc-preview th, .fc-preview td { text-align: left; padding: 6px 8px 6px 0; border-top: 1px solid var(--grid); vertical-align: middle; }
+.fc-preview thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); border-top: 0; vertical-align: bottom; min-width: 74px; }
+.fc-preview tbody th { white-space: nowrap; font-weight: 600; }
+.fc-preview td.fc-diff .fc-st { outline: 2px solid var(--ink); outline-offset: 1px; }
+.fc-tag[hidden], .fs-err[hidden] { display: none; }

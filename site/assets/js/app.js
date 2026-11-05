@@ -16,6 +16,7 @@ import * as screener from './pages/screener.js';
 import * as glossary from './pages/glossary.js';
 import * as sources from './pages/sources.js';
 import * as notes from './pages/notes.js';
+import * as fundamentals from './pages/fundamentals.js';
 import { saveAllEditors } from './notes/editor.js';
 import { initNotesPanel } from './notes/panel.js';
 
@@ -26,6 +27,7 @@ export const SECTIONS = {
   compare: { label: 'Compare', accent: 'green', n: '04', href: '#/compare' },
   catalysts: { label: 'Catalysts', accent: 'purple', n: '05', href: '#/catalysts' },
   screener: { label: 'Screener', accent: 'blue', n: '06', href: '#/screener' },
+  fundamentals: { label: 'Fundamentals', accent: 'green', n: '10', href: '#/fundamentals' },
   glossary: { label: 'Glossary', accent: 'gray', n: '07', href: '#/glossary' },
   sources: { label: 'Sources', accent: 'gray', n: '08', href: '#/sources' },
   notes: { label: 'Notes', accent: 'yellow', n: '09', href: '#/notes' },
@@ -43,6 +45,7 @@ const ROUTES = [
   { re: /^\/glossary\/?$/, mod: glossary, nav: 'glossary' },
   { re: /^\/sources\/?$/, mod: sources, nav: 'sources' },
   { re: /^\/notes(?:\/(.+?))?\/?$/, mod: notes, nav: 'notes' },
+  { re: /^\/fundamentals(?:\/([^/]+))?\/?$/, mod: fundamentals, nav: 'fundamentals' },
 ];
 
 // ---------- theme ----------

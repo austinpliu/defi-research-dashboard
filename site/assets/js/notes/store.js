@@ -108,6 +108,26 @@ export async function setMeta(key, value) {
   if (db) { const t = tx(['meta'], 'readwrite'); t.objectStore('meta').put({ key, value }); await new Promise((r) => { t.oncomplete = r; t.onerror = r; }); }
 }
 
+// ---------- system files (dashboard settings, synced with the notes but never shown as notes) ----------
+// Kept in the meta store under "sys:<path>", so the notes tree, search, graph, links and export never see them.
+const SYS = 'sys:';
+export const getSystem = (path) => { const v = meta.get(SYS + path); return v ? { path, ...v } : null; };
+export const allSystem = () => [...meta.entries()].filter(([k, v]) => k.startsWith(SYS) && v).map(([k, v]) => ({ path: k.slice(SYS.length), ...v }));
+export async function putSystem(path, body) {
+  const value = { body: String(body), updated: Date.now() };
+  meta.set(SYS + path, value);
+  if (db) { const t = tx(['meta'], 'readwrite'); t.objectStore('meta').put({ key: SYS + path, value }); await new Promise((res, rej) => { t.oncomplete = res; t.onerror = () => rej(t.error); }); }
+  channel?.postMessage('changed');
+  emit({ system: path });
+}
+export async function deleteSystem(path) {
+  if (!meta.has(SYS + path)) return;
+  meta.delete(SYS + path);
+  if (db) { const t = tx(['meta'], 'readwrite'); t.objectStore('meta').delete(SYS + path); await new Promise((res, rej) => { t.oncomplete = res; t.onerror = () => rej(t.error); }); }
+  channel?.postMessage('changed');
+  emit({ system: path });
+}
+
 // ---------- writes ----------
 const nowIso = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 

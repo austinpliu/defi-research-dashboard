@@ -25,6 +25,35 @@ _Updated as work happens. Last update: 5 Nov 2026 (session: category double coun
   - **Backup and sync:** zip export and import (an Obsidian vault), and optional sync to your own private GitHub repo with a fine-grained token. Sync handles conflicts safely, keeping both versions.
   - **Tests:** 76 unit tests, covering link parsing, renames, backlinks, sync conflicts against a fake GitHub, zip, and privacy guards. The browser smoke test covers the notes page, the graph and the side panel on desktop and phone.
 
+- **Fundamentals Checklist (Nov 2026, on `claude/fundamentals-checklist`, not merged):**
+  - **Stage 1 done:** the pipeline writes `site/data/fundamentals.json` with each protocol's inputs and sources, plus 5 years of weekly prices from DefiLlama's coins API.
+  - **Stage 2 done:** the rules engine (`site/assets/js/fundamentals/rules.js`), the thresholds config, and the empty hand-edited `value-accrual.json` and `team-notes.json`. 31 unit tests cover every rule, empty data, zero revenue, ties and threshold validation (107 tests in all).
+  - **Stage 3 done:** the Fundamentals section (`#/fundamentals`), labelled as a research aid throughout.
+    - **Overview:** a sortable, filterable table with the checks as columns, a takeaway headline, and a "How this works" panel that renders every rule and threshold from the config.
+    - **Detail page:** one per protocol (`#/fundamentals/<slug>`), with seven check cards (status, sentence, numbers, source links) and four charts, each with PNG, Table and CSV.
+    - **Elsewhere:** a compact card on protocol and token pages, the "New note from this checklist" button, and six new glossary entries.
+  - **Stage 4 done:** the settings panel (`#/fundamentals/settings`).
+    - **Threshold forms:** label, value, default, explanation, per-field reset and reset all. Invalid values are rejected with a message, and changed values are marked.
+    - **Live preview:** shows which statuses your values change.
+    - **Editors:** value-accrual entries and team notes (add, edit, delete), with http(s) sources required.
+    - **Saving and sync:** export, import and reset. Settings save in the browser and sync through the notes repo, with merge-by-content conflict handling.
+    - **Tests:** 13 new (120 in all).
+  - **Stage 5 done:**
+    - **Smoke test:** now covers the overview, a detail page and Settings on desktop and phone.
+      - In the browser: the table and filter, every number having a source link, rejecting a negative value and an out-of-order cutoff, a saved value surviving a reload, the "Using your custom settings" notice, and "New note from this checklist".
+    - **Unit test:** every number in the published `fundamentals.json` resolves to an http(s) source.
+    - **Link checker:** now also opens the links in `fundamentals.json` and the two hand-edited config files.
+    - **Docs:** README and DECISIONS updated.
+  - **Verified live (run of 5 Nov 2026, 19:16 UTC):**
+    - holders revenue for 9 of 10 protocols;
+    - weekly price history for all 10 tokens (76–261 weeks; shorter where the token is newer);
+    - every number links to its source.
+  - **Not available without a key:**
+    - token incentive emissions (DefiLlama `/emissions` is paid), so "incentives vs holders revenue" is "no data" everywhere;
+    - Ethena's holders revenue (DefiLlama answers HTTP 400);
+    - Ondo's and Centrifuge's TVL history (DefiLlama has none), so their track record is "no data".
+  - **To fill in by hand:** `site/config/value-accrual.json` (confirmed fee switches and buybacks) and `site/config/team-notes.json`. Both ship empty. See README › Fundamentals Checklist.
+
 ## Not done / known gaps
 - **Notes, not yet:**
   - No attachments: images in notes show as links and aren't stored.
