@@ -17,6 +17,7 @@ import * as glossary from './pages/glossary.js';
 import * as sources from './pages/sources.js';
 import * as notes from './pages/notes.js';
 import { saveAllEditors } from './notes/editor.js';
+import { initNotesPanel } from './notes/panel.js';
 
 export const SECTIONS = {
   home: { label: 'Overview', accent: 'orange', n: '01', href: '#/' },
@@ -183,6 +184,7 @@ async function route() {
   const sec = SECTIONS[match.r.nav];
   main.className = `acc-${sec.accent}`;
   document.querySelectorAll('[data-nav]').forEach((a) => (a.dataset.nav === match.r.nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+  document.title = match.r.nav === 'home' ? 'DeFi Research Dashboard' : `${sec.label} · DeFi Research Dashboard`; // pages may set a more specific title
   const frag = h('div', { class: 'page' });
   main.replaceChildren(h('div', { class: 'loading', 'aria-busy': 'true' }, 'Loading data…'));
   try {
@@ -207,6 +209,7 @@ function init() {
   try { stored = localStorage.getItem('theme'); } catch { /* ignore */ }
   if (stored === 'light' || stored === 'dark') document.documentElement.dataset.theme = stored;
   buildHeader();
+  initNotesPanel();
   syncThemeButton();
   initTooltips();
   setupFreshness();

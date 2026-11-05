@@ -114,7 +114,14 @@ export function chartCard(opts) {
     const cols = t.columns.map((c) => ({ label: c.label, get: (r) => (c.csv ? c.csv(r) : r[c.key]) }));
     downloadCSV(opts.csvName || titleEl.dataset.plain, cols, t.rows);
   });
-  append(tools, [pngBtn, tableBtn, csvBtn]);
+  // "Note": paste this chart's headline, title, page link and source into a note (side panel)
+  const noteBtn = h('button', { type: 'button', class: 'tool', title: 'Add this chart to a note' }, svgIcon('note'), 'Note');
+  noteBtn.addEventListener('click', () => {
+    const t = state.take;
+    const takeaway = t ? (t.plain || `${t.pre || ''}${t.hl || ''}${t.post || ''}`).trim() : '';
+    window.dispatchEvent(new CustomEvent('notes:chart-ref', { detail: { title: opts.title || state.title || titleEl.dataset.plain || 'Chart', takeaway, source: sourceText(state.src, opts.sources) } }));
+  });
+  append(tools, [pngBtn, tableBtn, csvBtn, noteBtn]);
 
   pending.push({ el: chartEl, build: opts.build, onClick: opts.onClick });
 
