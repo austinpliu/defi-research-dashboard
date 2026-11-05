@@ -89,6 +89,19 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
   - No official vesting contract address was found for Ondo, Centrifuge, Maple or Hyperliquid. Hyperliquid's contributor tokens live on HyperCore, its own chain, not in an EVM contract. Pendle's team and investor tokens are fully vested, so there is nothing to read.
   - When a project publishes its vesting contract, a free keyless RPC call can read it from the pipeline, with an explorer link for checking.
 
+- **Route 3, a hand-checked `unlocks.json` from each project's own docs: done.** Each tracked token has a status, a summary, the exact docs pages with a last-checked date, any vesting schedules (monthly or linear) and dated releases.
+  - **Amounts:** shares of supply come only from the docs. Token amounts are that share × CoinGecko's max supply (total supply if there is no max), and the page says so. Where the docs give no share, or official figures disagree, the amount is "not published". Examples: Ethena's investor share, Ondo's tranche sizes, and Morpho's cohort 3 (6.7% in the docs, 6.23% in the whitepaper).
+  - **Dates:** when the docs say "monthly" without a day, tranches are shown as "During Dec 2026", never on a made-up day. The current month is skipped, because its tranche may already have happened. A linear vest shows its average per month only when the docs give both its start and end dates.
+  - **Results on 5 Nov 2026:**
+    - ENA, scheduled: core contributors get 0.625% of supply a month until March 2028; investors are on the same cadence, amount unconfirmed.
+    - MORPHO, scheduled: founders' 15.2% vests linearly until 21 Nov 2027; cohort 3 has a window only.
+    - ONDO, partial: releases on 18 Jan 2027, 2028 and 2029; sizes not published.
+    - CFG, partial: vesting windows to Mar 2028, Apr 2029 and May 2030.
+    - PENDLE, none: fully vested since Sept 2024.
+    - HYPE, SYRUP, AAVE, SKY and COMP, unconfirmed: none of these projects publishes a schedule.
+  - **How the docs were read:** this sandbox can't open most websites, so each page was read through web-search results that quote it. Every entry links the page so you can check it yourself. Third-party trackers (Tokenomist, MEXC, KuCoin) were used only to find the official pages, never as the source of a number.
+  - **Safety rails:** the pipeline validates the file (status, dates, http(s) links, shares between 0 and 1), lists bad entries on the Sources page, and adds a reminder once `lastChecked` is more than 90 days old. Unlock events in Catalysts carry a "hand-checked" tag, and Catalysts shows each schedule's next 6 monthly tranches.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.

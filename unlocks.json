@@ -1,0 +1,252 @@
+{
+  "about": "Hand-checked token unlock schedules, taken from each project's own documentation. Every entry links the page it comes from. A share of supply is filled in only when the page states it (or gives the percentages to calculate it); otherwise it is null and the site says 'amount not published'. Tokens without a schedule a project has published are 'unconfirmed'. Re-check the pages when you edit, and update lastChecked.",
+  "lastChecked": "2026-11-05",
+  "statusMeaning": {
+    "scheduled": "dated tranches with amounts from the project's docs",
+    "partial": "the docs give dates or vesting windows but not every amount",
+    "none": "the docs say nothing is left to unlock",
+    "unconfirmed": "the project publishes no schedule we could confirm"
+  },
+  "tokens": {
+    "ethena": {
+      "symbol": "ENA",
+      "status": "scheduled",
+      "summary": "Core contributors and investors vest in monthly tranches until March 2028, after a one-year cliff that started at the token launch on March 5, 2024.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Ethena docs: ENA tokenomics",
+          "url": "https://docs.ethena.fi/overview/ena/tokenomics",
+          "lastChecked": "2026-11-05"
+        }
+      ],
+      "schedules": [
+        {
+          "label": "Core contributors (30% of supply)",
+          "type": "monthly",
+          "from": "2025-04",
+          "to": "2028-03",
+          "sharePerPeriod": 0.00625,
+          "source": "docs",
+          "basis": "The page puts core contributors at 30% of ENA, locked on a one-year cliff at which 25% unlocks, then vesting monthly over three years, with schedules starting at the March 5, 2024 TGE. So 30% × 75% ÷ 36 = 0.625% of supply per month from April 2025 to March 2028. The page doesn't name the day of the month."
+        },
+        {
+          "label": "Investors",
+          "type": "monthly",
+          "from": "2025-04",
+          "to": "2028-03",
+          "sharePerPeriod": null,
+          "source": "docs",
+          "basis": "The page gives investors the same terms as core contributors (one-year 25% cliff, then three years of monthly vesting). Their share of supply wasn't confirmed on the page, so no amount is shown."
+        }
+      ]
+    },
+    "morpho": {
+      "symbol": "MORPHO",
+      "status": "scheduled",
+      "summary": "Founders' tokens (15.2% of supply) vest linearly from November 21, 2025 to November 21, 2027, after a one-year lockup. Strategic partners' third cohort vests over the same window.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Morpho docs: the MORPHO token",
+          "url": "https://docs.morpho.org/learn/governance/morpho-token/",
+          "lastChecked": "2026-11-05"
+        },
+        {
+          "id": "whitepaper",
+          "label": "MORPHO token whitepaper (April 2026)",
+          "url": "https://morpho.org/whitepapers/token-whitepaper.pdf",
+          "lastChecked": "2026-11-05"
+        }
+      ],
+      "schedules": [
+        {
+          "label": "Founders (15.2% of supply)",
+          "type": "linear",
+          "start": "2025-11-21",
+          "end": "2027-11-21",
+          "share": 0.152,
+          "source": "docs",
+          "basis": "The docs say all co-founders relocked to a two-year linear vest after a one-year lockup from the earlier of the transferability date (November 21, 2024) or May 17, 2025. The whitepaper gives the same 12-month cliff (November 21, 2025) and full vesting by November 21, 2027 in one passage, though another passage says May 2028."
+        },
+        {
+          "label": "Strategic partners, cohort 3",
+          "type": "linear",
+          "start": "2025-11-21",
+          "end": "2027-11-21",
+          "share": null,
+          "source": "docs",
+          "basis": "The docs list this cohort at 6.7%, on a two-year linear vest after a one-year lockup from November 21, 2024. The whitepaper puts the round at 6.23%. The two official figures disagree, so no amount is shown."
+        }
+      ]
+    },
+    "ondo-finance": {
+      "symbol": "ONDO",
+      "status": "partial",
+      "summary": "Locked ONDO is released 12, 24, 36, 48 and 60 months after the January 18, 2024 unlock, so the next release is January 18, 2027. Ondo doesn't publish the size of each release.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Ondo Foundation docs: the ONDO token",
+          "url": "https://docs.ondo.foundation/ondo-token",
+          "lastChecked": "2026-11-05"
+        },
+        {
+          "id": "proposal",
+          "label": "Ondo Foundation blog: Unlocking ONDO (the FIP-08 proposal)",
+          "url": "https://blog.ondo.foundation/unlocking-ondo-a-proposal-from-the-ondo-foundation/",
+          "lastChecked": "2026-11-05"
+        }
+      ],
+      "events": [
+        {
+          "date": "2027-01-18",
+          "label": "36-month release of locked ONDO",
+          "share": null,
+          "source": "proposal",
+          "basis": "The proposal schedules releases 12, 24, 36, 48 and 60 months after the initial unlock. The docs say transfers opened on January 18, 2024 once FIP-08 passed, with seed and Series A investors on a one-year lock then a 48-month release, and the core team on a five-year lock-up. Neither page gives the size of each release."
+        },
+        {
+          "date": "2028-01-18",
+          "label": "48-month release of locked ONDO",
+          "share": null,
+          "source": "proposal",
+          "basis": "Same schedule: 48 months after the January 18, 2024 unlock. Size not published."
+        },
+        {
+          "date": "2029-01-18",
+          "label": "60-month release of locked ONDO",
+          "share": null,
+          "source": "proposal",
+          "basis": "Same schedule: 60 months after the January 18, 2024 unlock, when the core team's five-year lock-up also ends. Size not published."
+        }
+      ]
+    },
+    "centrifuge-2": {
+      "symbol": "CFG",
+      "status": "partial",
+      "summary": "Centrifuge's docs (as of June 2026) describe vesting windows but no dated tranches: 100M CFG from the CP149 mint vesting linearly through April 2029, the team's 12% through May 2030, and other stakeholders' tokens over 22 months through March 2028.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Centrifuge docs: the CFG token",
+          "url": "https://docs.centrifuge.io/getting-started/token-summary/",
+          "lastChecked": "2026-11-05"
+        }
+      ],
+      "schedules": [
+        {
+          "label": "CP149 mint (100M CFG)",
+          "type": "linear",
+          "start": null,
+          "end": "2029-04",
+          "tokens": 100000000,
+          "source": "docs",
+          "basis": "Of the 115M CFG minted under CP149, 15M unlocked at minting in May 2025 and the remaining 100M vest linearly through April 2029. The page gives no exact start or end day, so no monthly amount is shown."
+        },
+        {
+          "label": "Team (12% of supply)",
+          "type": "linear",
+          "start": null,
+          "end": "2030-05",
+          "share": 0.12,
+          "source": "docs",
+          "basis": "12% of total supply is allocated to the Centrifuge team, vesting gradually through May 2030. No start date or cadence is given."
+        },
+        {
+          "label": "Other stakeholders",
+          "type": "linear",
+          "start": null,
+          "end": "2028-03",
+          "share": null,
+          "source": "docs",
+          "basis": "The rest of the stakeholder allocation vests over 22 months through March 2028. The amount isn't stated."
+        }
+      ]
+    },
+    "pendle": {
+      "symbol": "PENDLE",
+      "status": "none",
+      "summary": "Nothing left to unlock. Pendle's docs say all team and investor tokens were fully vested by September 2024. New supply now comes only from weekly incentive emissions, which aren't unlocks.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Pendle docs: Tokenomics",
+          "url": "https://docs.pendle.finance/pendle-v2/ProtocolMechanics/Mechanisms/Tokenomics",
+          "lastChecked": "2026-11-05"
+        }
+      ]
+    },
+    "hyperliquid": {
+      "symbol": "HYPE",
+      "status": "unconfirmed",
+      "summary": "Core contributors' tokens were locked for one year after genesis, and the Hyper Foundation says most of their vesting schedules finish between 2027 and 2028, with some running past 2028. It hasn't published dates or amounts, so none are shown.",
+      "sources": [
+        {
+          "id": "genesis",
+          "label": "Hyper Foundation: HYPE Genesis",
+          "url": "https://hyperfnd.medium.com/hype-genesis-1830a4dc2e3f",
+          "lastChecked": "2026-11-05"
+        }
+      ]
+    },
+    "syrup": {
+      "symbol": "SYRUP",
+      "status": "unconfirmed",
+      "summary": "Maple's docs describe SYRUP's three-year inflation schedule, which ends with about 1,267,875,000 SYRUP around September 2026, but publish no team or investor unlock schedule.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Maple docs: SYRUP tokenomics",
+          "url": "https://docs.maple.finance/maple-for-token-holders/syrup-tokenomics",
+          "lastChecked": "2026-11-05"
+        }
+      ]
+    },
+    "aave": {
+      "symbol": "AAVE",
+      "status": "unconfirmed",
+      "summary": "Aave publishes no token unlock schedule. The link is the DAO's tokenomics (\"Aavenomics\") proposal, the closest official page.",
+      "sources": [
+        {
+          "id": "forum",
+          "label": "Aave governance: Aavenomics implementation, part one",
+          "url": "https://governance.aave.com/t/arfc-aavenomics-implementation-part-one/21248",
+          "lastChecked": "2026-11-05"
+        }
+      ]
+    },
+    "sky": {
+      "symbol": "SKY",
+      "status": "unconfirmed",
+      "summary": "Sky publishes no vesting schedule for SKY. Since a May 2025 executive vote, SKY rewards are paid from tokens the protocol already holds (the PauseProxy) instead of newly minted SKY.",
+      "sources": [
+        {
+          "id": "exec",
+          "label": "Sky governance: executive vote of May 29, 2025 (switch SKY rewards vesting stream source)",
+          "url": "https://vote.sky.money/executive/template-executive-vote-mkr-to-sky-upgrade-phase-two-switch-sky-token-rewards-vesting-stream-source-initialize-unichain-and-optimism-native-bridges-deactivate-sparklend-ddm-transfer-ownership-of-spk-token-to-spk-company-multisig-increase-allocator-spark-a-maximum-debt-ceiling-launch-project-funding-delegate-compensation-for-april-2025-atlas-core-development-payments-for-may-2025-spark-proxy-spell-may-29-2025",
+          "lastChecked": "2026-11-05"
+        },
+        {
+          "id": "blog",
+          "label": "Sky: Understanding the SKY token",
+          "url": "https://sky.money/blog/understanding-the-sky-token",
+          "lastChecked": "2026-11-05"
+        }
+      ]
+    },
+    "compound-governance-token": {
+      "symbol": "COMP",
+      "status": "unconfirmed",
+      "summary": "Compound publishes no unlock schedule. COMP reaches users at per-block rates that governance sets in each market.",
+      "sources": [
+        {
+          "id": "docs",
+          "label": "Compound v2 docs: Comptroller (COMP distribution)",
+          "url": "https://docs.compound.finance/v2/comptroller/",
+          "lastChecked": "2026-11-05"
+        }
+      ]
+    }
+  }
+}

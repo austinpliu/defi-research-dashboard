@@ -17,7 +17,9 @@ _Updated as work happens. Last update: 5 Nov 2026 (follow-up session: more coins
 
 ## Not done / known gaps
 - **Deploy:** GitHub Pages needs the repository owner to merge this branch into `main` and switch Settings → Pages → Source to "GitHub Actions" (see README › How to deploy). The publish workflow is ready but can't be switched on from here. The 6-hour schedule also starts only once the workflow is on `main`.
-- **Token unlocks (follow-up item 2, skipped):** checked again in Nov 2026 and there is still no free, keyless source. DefiLlama's is paid-only (HTTP 402), and DropsTab, Magna, Tokenomist and an oanor.com wrapper all need a key or offer only a website. Shown as "unavailable"; details in DECISIONS.md.
+- **Token unlocks (Nov 2026 deep dive):** live through a hand-checked `unlocks.json` built from each project's own docs (route 3). DefiLlama's open-source emissions adapters (route 1) are no longer public, and no project publishes vesting contracts to read on-chain (route 2), so those routes are closed for now (DECISIONS.md › Token unlocks).
+  - Dated unlocks in Catalysts and on token pages: ENA monthly tranches, MORPHO founders' linear vest, and ONDO's January releases (sizes not published). CFG shows vesting windows, and PENDLE has nothing left to unlock. HYPE, SYRUP, AAVE, SKY and COMP are "unconfirmed".
+  - Still open: re-check the docs pages by hand every few months (the site reminds you after 90 days), and fill in amounts if a project publishes them (Ethena's investor share, Ondo's tranche sizes).
 - **Funding rounds list:** DefiLlama's `/raises` is Pro-only. Protocol pages show the rounds in each protocol's free profile instead.
 - **On-chain governance** (Sky, Compound and Aave executive votes): no keyless API. Snapshot plus governance-forum feeds only.
 - **Perps volume** (Hyperliquid): Pro-only on DefiLlama.

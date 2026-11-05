@@ -5,7 +5,7 @@ import { chartCard } from '../cards.js';
 import { loadSafe } from '../data.js';
 import { timelineChart, themeOf } from '../charts.js';
 import { dataTable } from '../table.js';
-import { date, dateTime, relative, shortDate, usd, pct } from '../format.js';
+import { date, dateTime, relative, shortDate, usd, pct, monthYear } from '../format.js';
 import { catalystTakeaway } from '../takeaways.js';
 import { setQuery } from '../route.js';
 
@@ -41,7 +41,7 @@ export async function render(root, { query }) {
 
   root.append(band({ n: '05', tag: 'Section 05 · Catalysts', title: 'What could move your tokens', sub: 'Governance votes, scheduled events, launches and upgrades, forum posts and news about your watchlist (and the peers you compare it with) — each with a link to the original. Information, not predictions.' }));
   root.append(h('div', { class: 'disclaimer', role: 'note', style: { marginBottom: '14px' } }, h('span', { class: 'chip' }, 'Information, not prediction'), 'Nothing here says a price will move. Types like “launch / upgrade” are assigned by simple keyword rules on the headline; open the source to judge for yourself.'));
-  for (const u of cat.unavailable || []) root.append(h('div', { style: { marginBottom: '14px' } }, unavailable(`${TYPES[u.type]?.label || u.type}s: unavailable`, u.reason)));
+  for (const u of cat.unavailable || []) root.append(h('div', { style: { marginBottom: '14px' } }, unavailable(u.title || `${TYPES[u.type]?.label || u.type}s: unavailable`, u.reason)));
 
   // ---------- filters ----------
   const chipRow = (items, set, key) => h('div', { class: 'group' }, items.map(([val, label]) => {
@@ -113,10 +113,11 @@ export async function render(root, { query }) {
     const T = TYPES[i.type] || { label: i.type, slot: 7 };
     const src = S[i.src];
     return h('div', { class: `cat-item ${i.status}` },
-      h('div', { class: 'when' }, shortDate(i.date), h('div', { class: 'muted', style: { fontWeight: 500 } }, relative(i.date)), i.status === 'open' ? h('span', { class: 'chip ink', style: { marginTop: '4px' } }, 'Open') : i.status === 'upcoming' ? h('span', { class: 'chip solid', style: { marginTop: '4px' } }, 'Upcoming') : null),
+      h('div', { class: 'when' }, i.datePrecision === 'month' ? monthYear(i.date) : shortDate(i.date), h('div', { class: 'muted', style: { fontWeight: 500 } }, i.datePrecision === 'month' ? 'day not stated' : relative(i.date)), i.status === 'open' ? h('span', { class: 'chip ink', style: { marginTop: '4px' } }, 'Open') : i.status === 'upcoming' ? h('span', { class: 'chip solid', style: { marginTop: '4px' } }, 'Upcoming') : null),
       h('div', {},
         h('div', { class: 'chips', style: { marginBottom: '4px' } }, h('span', { class: 'chip' }, h('span', { class: 'type-dot', style: { background: `var(--s${(T.slot % 8) + 1})` } }), T.term ? term(T.label, T.term) : T.label), (i.symbols || []).map((s) => h('span', { class: 'chip solid' }, s))),
         extLink(i.url, i.title, { class: 'title' }),
+        i.manual ? h('span', { class: 'chip', style: { marginLeft: '6px' }, title: 'Taken by hand from the project’s own docs; open the link to check it' }, 'hand-checked') : null,
         i.summary ? h('div', { class: 'summary', style: { fontSize: '13px', color: 'var(--ink-2)', marginTop: '3px' } }, i.summary) : null,
         h('p', { class: 'src', style: { marginTop: '6px' } }, 'Source: ', extLink(i.url, i.sourceName), src?.fetchedAt ? ` · fetched ${dateTime(src.fetchedAt)}` : '', i.type === 'launch-upgrade' ? ' · type from keyword match' : '')));
   }
@@ -128,8 +129,8 @@ export async function render(root, { query }) {
       const out = [];
       let lastDay = '';
       for (const i of list) {
-        const d = date(i.date);
-        if (d !== lastDay) { out.push(h('div', { class: 'cat-day' }, d, h('span', { class: 'rel' }, relative(i.date)))); lastDay = d; }
+        const d = i.datePrecision === 'month' ? `During ${monthYear(i.date)}` : date(i.date);
+        if (d !== lastDay) { out.push(h('div', { class: 'cat-day' }, d, h('span', { class: 'rel' }, i.datePrecision === 'month' ? 'day not stated in the docs' : relative(i.date)))); lastDay = d; }
         out.push(itemEl(i));
       }
       return out;

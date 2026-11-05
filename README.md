@@ -105,6 +105,16 @@ From then on:
 
 If a run fails, the **Actions** tab shows a red ✗; click it to see which step failed. The website keeps showing the last good data.
 
+## Token unlocks
+
+Upcoming unlocks come from **`unlocks.json`**, a hand-checked file built from each project's own tokenomics docs. No free API publishes unlock schedules: DefiLlama sells them on its paid plan, and its open-source adapters are no longer public. Each token page has an **Unlocks** card, and dated unlocks appear in Catalysts tagged "hand-checked". Every entry links the docs page it comes from and says when it was last checked.
+
+- **Statuses:** *scheduled* (dated tranches with amounts from the docs), *partial* (dates or vesting windows, but not every amount), *none* (the docs say nothing is left to unlock), *unconfirmed* (the project publishes no schedule we could confirm).
+- **Amounts** are the docs' share of supply × CoinGecko's max supply. If the docs give no share, the site says "not published" rather than guessing.
+- **Dates:** if the docs only say "monthly", the site shows the month ("During Dec 2026"), not a made-up day.
+
+To update an entry: open the linked page, compare, and edit the token's entry in `unlocks.json` (shares are fractions: 0.00625 = 0.625%). Then set `lastChecked` to today's date. Schedule types are `monthly` (with `from`/`to` as YYYY-MM and `sharePerPeriod`) and `linear` (with `start`/`end` dates and a `share` or `tokens` total). One-off releases go in `events` (with a `date` and an optional `share`). If an entry is malformed, the Sources page says so, and the token falls back to "unconfirmed".
+
 ## How to add a protocol
 
 Everything the dashboard tracks is in one file, **`watchlist.json`**. You can edit it on GitHub directly (open the file, click the pencil icon, edit, then **Commit changes**). Saving it starts a data update automatically, and the new protocol appears on the site within about 10 minutes.
