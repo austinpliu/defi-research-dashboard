@@ -71,7 +71,7 @@ test('pipeline writes every file with sources and handles failures honestly', ()
     const cat = read('catalysts.json');
     assert.ok(cat.items.some((i) => i.type === 'governance-vote' && i.status === 'open'));
     assert.ok(cat.items.every((i) => i.url && i.src && cat.sources[i.src]), 'every catalyst has a link and a source');
-    assert.equal(cat.items.filter((i) => i.type === 'unlock').length, 6, 'Catalysts shows the next 6 monthly tranches');
+    assert.equal(cat.items.filter((i) => i.type === 'unlock').length, 6, 'Catalysts shows the next 6 months of tranches, one item per month');
     assert.ok(cat.unavailable.some((u) => u.reason.includes('Unconfirmed')), 'tokens without a schedule are listed as unconfirmed');
   } finally {
     rmSync(out, { recursive: true, force: true });

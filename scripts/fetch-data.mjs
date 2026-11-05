@@ -488,26 +488,43 @@ async function main() {
       p.doc.unlocks = { ...u, src: srcRec ? srcKey : null };
       if (srcRec) { p.token.sources[srcKey] = srcRec; p.doc.sources[srcKey] = srcRec; catSources[srcKey] = srcRec; }
       if (u.status === 'unconfirmed') unconfirmed.push(sym);
-      // Catalysts: dated events (monthly tranches: the next 6 months)
-      const perSchedule = {};
+      // Catalysts: dated events. Tranches that fall in the same month (or on the same day) for
+      // one token become one item, and monthly schedules show their next 6 months.
+      const groups = new Map();
       for (const e of u.events) {
-        if (e.kind === 'monthly' && (perSchedule[e.label] = (perSchedule[e.label] || 0) + 1) > 6) continue;
-        const amount = e.tokens != null ? `${Math.round(e.tokens).toLocaleString('en-US')} ${sym}${e.share != null ? ` (${(e.share * 100).toFixed(2)}% of supply)` : ''}` : 'amount not published';
+        const key = `${e.ts}|${e.precision}|${e.kind === 'vesting-end' ? 'end' : 'unlock'}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(e);
+      }
+      const monthsShown = new Set();
+      for (const [key, evs] of groups) {
+        const e0 = evs[0];
+        if (evs.every((e) => e.kind === 'monthly')) {
+          if (!monthsShown.has(e0.ts) && monthsShown.size >= 6) continue;
+          monthsShown.add(e0.ts);
+        }
+        const amountOf = (e) => (e.tokens != null ? `${Math.round(e.tokens).toLocaleString('en-US')} ${sym}${e.share != null ? ` (${(e.share * 100).toFixed(2)}% of supply)` : ''}` : 'amount not published');
+        const known = evs.filter((e) => e.tokens != null);
+        const total = known.reduce((sum, e) => sum + e.tokens, 0);
+        const title = key.endsWith('|end')
+          ? `${sym}: ${evs.map((e) => e.label).join('; ')}`
+          : `${sym} unlock: ${evs.map((e) => `${amountOf(e)} · ${e.label}`).join(' + ')}`;
         unlockItems.push({
-          id: `unlock-${p.token.id}-${e.ts}-${slugify(e.label)}`,
-          date: new Date(e.ts * 1000).toISOString(),
-          datePrecision: e.precision,
+          id: `unlock-${p.token.id}-${key.replace(/\|/g, '-')}`,
+          date: new Date(e0.ts * 1000).toISOString(),
+          datePrecision: e0.precision,
           type: 'unlock',
           status: 'upcoming',
           protocols: [p.doc.slug],
           symbols: [sym],
-          title: e.kind === 'vesting-end' ? `${sym}: ${e.label}` : `${sym} unlock: ${amount} · ${e.label}`,
-          summary: e.basis || '',
-          url: e.source?.url || first?.url,
-          sourceName: `${e.source?.label || first?.label} (hand-checked ${u.lastChecked})`,
+          title,
+          summary: evs.map((e) => e.basis).filter(Boolean).join(' '),
+          url: e0.source?.url || first?.url,
+          sourceName: `${e0.source?.label || first?.label} (hand-checked ${u.lastChecked})`,
           src: srcKey,
-          tokens: e.tokens,
-          share: e.share,
+          tokens: known.length ? total : null,
+          share: known.length && known.every((e) => e.share != null) ? known.reduce((sum, e) => sum + e.share, 0) : null,
+          partialAmount: known.length > 0 && known.length < evs.length,
           manual: true,
         });
       }

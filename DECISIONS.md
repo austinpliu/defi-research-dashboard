@@ -100,7 +100,7 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
     - PENDLE, none: fully vested since Sept 2024.
     - HYPE, SYRUP, AAVE, SKY and COMP, unconfirmed: none of these projects publishes a schedule.
   - **How the docs were read:** this sandbox can't open most websites, so each page was read through web-search results that quote it. Every entry links the page so you can check it yourself. Third-party trackers (Tokenomist, MEXC, KuCoin) were used only to find the official pages, never as the source of a number.
-  - **Safety rails:** the pipeline validates the file (status, dates, http(s) links, shares between 0 and 1), lists bad entries on the Sources page, and adds a reminder once `lastChecked` is more than 90 days old. Unlock events in Catalysts carry a "hand-checked" tag, and Catalysts shows each schedule's next 6 monthly tranches.
+  - **Safety rails:** the pipeline validates the file (status, dates, http(s) links, shares between 0 and 1), lists bad entries on the Sources page, and adds a reminder once `lastChecked` is more than 90 days old. Unlock events in Catalysts carry a "hand-checked" tag. Tranches for one token in the same month (e.g. Ethena's core contributors and investors) are merged into one item, and only the next 6 months are shown (token pages show the full year).
 
 ## Design
 
