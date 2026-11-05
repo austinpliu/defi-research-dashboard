@@ -215,6 +215,25 @@ A research aid, not a rating or a buy signal. Each check says how the data compa
 - **Import replaces your settings only after a confirmation** that says what's in the file and how many values in it are invalid. Export writes only your overrides, not the defaults.
 - **Overview takeaway:** names the protocol returning the most holders revenue relative to its market cap (annualized holders revenue ÷ market cap), and how many send none. Two protocols tie when their yields are equal at one decimal, as shown.
 
+## Token incentives from Dune: tried and stopped (Nov 2026)
+
+The experiment was to fill check 1's "token incentives" from Dune, using a free API key stored as a GitHub secret. It stopped at the research stage, because Dune isn't a reliable fit for most of the watchlist. Nothing was added to the pipeline or the checklist, and the key is not used anywhere, so incentives stay "no data".
+- **The free tier can't do it.** Dune's own docs now describe free access as view-only, with "API access: Not available", no query execution and no scheduled refresh. Earlier free plans had about 2,500 credits a month, with reading results costing 1 credit per 1,000 datapoints. A news report says accounts created before 21 July 2026 lost the ability to run queries on 10 September 2026. Even where a free key can read a saved result, a query only updates when its owner re-runs it, so a daily refresh would mostly re-read stale results. Any query I wrote myself would never update on its own.
+- **Most of the watchlist has no on-chain incentive stream that Dune measures:**
+  - **Hyperliquid:** staking rewards are paid on HyperCore, which isn't an EVM chain Dune indexes.
+  - **Centrifuge:** rewards were paid on the Centrifuge Chain (Substrate). The ecosystem allocation vests to the treasury, not to users.
+  - **Ethena:** rewards are off-chain Sats points that become seasonal airdrops.
+  - **Maple:** Drips ended in February 2026, and incentives now run through partners on Merkl.
+  - **Morpho:** rewards moved from its own distributor (URD) to Merkl under MIP 111. On-chain claims measure when people claim, not what was emitted.
+  - **Ondo:** there's no active token incentive program; DefiLlama shows $0 incentives.
+- **Candidates I couldn't vet:**
+  - **Compound:** a "COMP rewards daily delta by network" query (dune.com/queries/7727954), author unknown.
+  - **Sky:** SKY farm rewards, 600M SKY a year per Sky's docs.
+  - **Pendle:** gauge emissions, under a new algorithmic model since January 2026.
+  - **Aave:** Safety Module AAVE emissions, which a recent governance proposal cut from 550 to 385 a day.
+  - **Why none was used:** dune.com and docs.dune.com are blocked from this build sandbox, so no query's SQL, author or numbers could be read, and none could be checked against an independent source.
+- **If Dune is reconsidered:** it would need a paid or trial plan. Even then, only those four protocols look measurable, each needing a verified query.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.
