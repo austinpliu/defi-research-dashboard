@@ -73,6 +73,16 @@ Choices made while building this unattended, with the reason for each. Newest at
 - **"Top yield pools" means pools that pay yield.** Pools are listed largest first, but those paying 0% (usually collateral-only, like Compound V3's WBTC) go after every pool that pays something. They used to fill most of Compound's table. The table title says how many 0% pools there are.
 - **Link checker:** many sites (DefiLlama, CoinGecko, DexScreener, Etherscan, The Defiant…) sometimes answer automated requests with a bot-check page (HTTP 403 "Just a moment…"). Those links are listed as "check by hand", not "broken", and so are rate limits (429), servers that are overloaded or down at that moment (502/503/504), and connection failures. API requests that failed during the data fetch (the paid-only 402s, or "no data of this type" 400s) are listed as "failed in fetch": they are the reason a section says "unavailable", not broken links. The checker records the page title for links that open, so you can confirm they land on the right protocol. It now checks every link (about 800; it was capped at 600) at one request per second per site, which takes about 3–4 minutes. Two exceptions: DefiLlama's per-pool history endpoint (`yields.llama.fi/chart/…`) rate-limits after a few calls, so only 6 of those are opened and the rest are labelled "not checked one by one"; and an API request that was rate-limited during the data fetch counts as "check by hand", not broken (run 13 listed three GeckoTerminal 429s as broken before this fix).
 
+## Token unlocks: the three routes (Nov 2026)
+
+Rule throughout: no API keys, no paywall workarounds, no scraping against a site's terms, and no estimated or invented unlocks. A token whose schedule can't be confirmed from a real source shows "unconfirmed".
+
+- **Route 1, DefiLlama's open-source emissions adapters: not available.** The repository `github.com/DefiLlama/emissions-adapters` isn't public any more:
+  - From this sandbox, every raw.githubusercontent.com path in it returned 404 (package.json and README on master and main), while DefiLlama's other public repos (e.g. dimension-adapters) loaded normally.
+  - From GitHub's own Actions runner, which has normal internet access, an anonymous `git ls-remote` was refused with a credentials prompt (GitHub does this for private or missing repos), and the link checker got HTTP 404 for the repo page (run 19).
+  - Using an old fork or mirror of a repo its owner has taken private would get around DefiLlama's decision to sell unlock data on its paid API, so it wasn't tried. A sandbox probe of a CDN mirror was also refused by this environment's safety check, rightly.
+  - The pipeline still checks once per run (anonymously, outside this repo's checkout, so no token is ever sent), and the result is listed among the Catalysts sources. If the repo becomes public again, the check will say so.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.
