@@ -5,7 +5,7 @@ import { createEditor, MOD } from '../notes/editor.js';
 import { buildIndex, basename, dirname, parseLinks, parseFrontmatter, parseTags, searchNotes, invalidNameReason, isTrashed, TRASH, joinPath } from '../notes/model.js';
 import { askText, confirmBox, choose, popMenu, toast } from '../notes/dialog.js';
 import { newNote, createLinked, noteHref, allTemplates } from '../notes/workspace.js';
-import { relative } from '../format.js';
+import { renderGraph } from '../notes/graph.js';
 
 const EXP_KEY = 'notes-expanded';
 let expanded;
@@ -16,7 +16,7 @@ const clean = (...xs) => xs.flat(Infinity).filter((x) => x !== null && x !== und
 const go = (hash, replace = false) => { if (replace) { history.replaceState(null, '', hash); dispatchEvent(new HashChangeEvent('hashchange')); } else location.hash = hash; };
 
 // optional parts added by later modules (graph view, sync/export)
-export const hooks = { graph: null, headerActions: [] };
+export const hooks = { graph: renderGraph, headerActions: [] };
 
 export async function render(root, { params, query }) {
   const { persistent } = await store.init();

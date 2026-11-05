@@ -155,3 +155,21 @@ kbd { font: 600 11.5px/1 var(--font); border: 1px solid var(--border-strong); bo
   .nw-search, .nw-filter, .nd-input, .ne-tags { font-size: 16px; }
 }
 .nw-sec-btns { display: inline-flex; gap: 4px; }
+
+/* ---------- graph ---------- */
+.ng { padding: 12px; }
+.ng-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.ng-controls .nw-filter { width: auto; min-width: 140px; }
+.ng-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.ng-wrap { position: relative; border-radius: var(--radius-sm); background: radial-gradient(circle at 50% 45%, var(--surface) 0%, var(--surface-2) 100%); border: 1px solid var(--border); overflow: hidden; }
+.ng-canvas { display: block; touch-action: none; cursor: grab; }
+.ng-canvas:active { cursor: grabbing; }
+.ng-canvas.drawing { cursor: crosshair; }
+.ng-canvas:focus-visible { outline: 2px solid var(--mark); outline-offset: -2px; }
+.ng-info { position: absolute; left: 10px; bottom: 10px; right: 10px; font-size: 13px; color: var(--ink-2); pointer-events: none; }
+.ng-info:not(:empty) { pointer-events: auto; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; backdrop-filter: blur(4px); }
+.ng-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
+.ng-key { display: inline-flex; align-items: center; gap: 6px; }
+.ng-key i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.ng-help { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+.nw.graph-mode { grid-template-columns: 240px minmax(0, 1fr); }
