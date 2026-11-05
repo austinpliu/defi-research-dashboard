@@ -171,7 +171,7 @@ async function main() {
   if (market.categories?.basis) {
     const b = market.categories.basis;
     console.log(`   ↳ categories (${b.method}): ${roundSmart((b.attributed || 0) / 1e9)}B of the ${roundSmart((b.headline || 0) / 1e9)}B headline (${b.attributedShare}%); left out: liquid staking ${roundSmart((b.liquidStaking || 0) / 1e9)}B, double counted ${roundSmart((b.doubleCounted || 0) / 1e9)}B, both ${roundSmart((b.both || 0) / 1e9)}B; raw sum ${roundSmart((b.rawSum || 0) / 1e9)}B`);
-    if (b.method === 'category-rules') problem('info', 'DefiLlama’s protocol list had no doublecounted / liquidstaking figures this run, so category TVL leaves out whole categories by rule');
+    if (b.method === 'category-rules') problem('info', `Category TVL: DefiLlama's free protocol list doesn't mark double-counted or liquid-staking TVL per protocol, so whole categories are left out by rule; the rest adds up to ${b.attributedShare}% of the headline TVL, so category shares are of that total (explained on the Overview)`);
   }
   if (PROBE && raw.protocols.ok) {
     const keyCount = {};

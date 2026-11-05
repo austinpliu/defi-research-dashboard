@@ -19,7 +19,9 @@ function categoryNote(b) {
   const left = [b.liquidStaking ? `liquid staking (${usd(b.liquidStaking)})` : null, b.doubleCounted ? `deposits another protocol also counts (${usd(b.doubleCounted)})` : null, b.both ? `${usd(b.both)} that is both` : null].filter(Boolean);
   const leftText = left.length ? `Left out, as DefiLlama’s headline does: ${left.join(', ')}.` : '';
   if (b.denominator === 'attributed-no-headline') return `Shares of the ${usd(b.attributed)} these categories add up to (the headline TVL was unavailable this run). ${leftText}`;
-  if (b.denominator === 'attributed-over-headline') return `Shares of the ${usd(b.attributed)} these categories add up to. That is ${pct(b.attributedShare - 100, { signed: false, digits: 0 })} more than the ${usd(b.headline)} headline DeFi TVL, because some deposits are still counted by two protocols and DefiLlama didn’t flag them this run. ${leftText}`;
+  if (b.denominator === 'attributed-over-headline') {
+    return `Shares of the ${usd(b.attributed)} these categories add up to, not of the ${usd(b.headline)} headline DeFi TVL. Like the headline, this leaves out ${left.join(', ')}. The categories still add up to ${pct(b.attributedShare - 100, { signed: false, digits: 0 })} more than the headline, because some deposits sit in two protocols at once (for example a lending market and a vault that lends into it), and DefiLlama’s free protocol list doesn’t say which. Measured against the headline, these shares would add up to more than 100%.`;
+  }
   const s = b.attributedShare;
   const gap = s == null || Math.abs(s - 100) < 1
     ? ` The categories add up to ${usd(b.attributed)}, matching it.`

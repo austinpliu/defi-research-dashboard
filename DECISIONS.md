@@ -108,6 +108,7 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
   - I couldn't confirm from this sandbox that the protocol list carries those figures. The pipeline's list of non-chain keys already names them, and DefiLlama's site uses them for its "double count" and "liquid staking" toggles.
   - If a run's list lacks them, the pipeline says so on the Sources page and leaves out whole categories by rule: Liquid Staking, Liquid Restaking, Yield, Yield Aggregator, Restaking, Risk Curators and Onchain Capital Allocator.
   - "Staking Pool" is not on that list. I couldn't confirm how DefiLlama treats it, so it stays in.
+- **Live result (run 26):** the free protocol list carries no per-protocol double-count data (0 protocols). Category rules bring the total from $198.9B to $108.5B, still 128% of the $84.9B headline. So shares are of the categories' own total, and the Overview note explains why they can't be of the headline. I didn't use DefiLlama's undocumented `lite/protocols2` endpoint to close the gap (same rule as for unlocks: documented endpoints only).
 - **Shares are of the headline only when the totals reconcile (within 3%).** Otherwise they are of the categories' own total, and the note under the chart says how far apart the two are and why. A share must never be part of a total it exceeds. The 3% allowance covers DefiLlama totalling each chain separately; chain shares already match the headline to within 0.3%.
 
 ## Design
