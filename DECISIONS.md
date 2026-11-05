@@ -102,6 +102,14 @@ Rule throughout: no API keys, no paywall workarounds, no scraping against a site
   - **How the docs were read:** this sandbox can't open most websites, so each page was read through web-search results that quote it. Every entry links the page so you can check it yourself. Third-party trackers (Tokenomist, MEXC, KuCoin) were used only to find the official pages, never as the source of a number.
   - **Safety rails:** the pipeline validates the file (status, dates, http(s) links, shares between 0 and 1), lists bad entries on the Sources page, and adds a reminder once `lastChecked` is more than 90 days old. Unlock events in Catalysts carry a "hand-checked" tag. Tranches for one token in the same month (e.g. Ethena's core contributors and investors) are merged into one item, and only the next 6 months are shown (token pages show the full year).
 
+## Category shares (REVIEW item 7, Nov 2026)
+
+- **Categories use the headline's basis.** DefiLlama's headline DeFi TVL leaves out liquid staking and double-counted TVL, so each protocol now adds only what the headline counts. That is its TVL minus DefiLlama's per-protocol `doublecounted` and `liquidstaking` figures, with `dcAndLsOverlap` added back.
+  - I couldn't confirm from this sandbox that the protocol list carries those figures. The pipeline's list of non-chain keys already names them, and DefiLlama's site uses them for its "double count" and "liquid staking" toggles.
+  - If a run's list lacks them, the pipeline says so on the Sources page and leaves out whole categories by rule: Liquid Staking, Liquid Restaking, Yield, Yield Aggregator, Restaking, Risk Curators and Onchain Capital Allocator.
+  - "Staking Pool" is not on that list. I couldn't confirm how DefiLlama treats it, so it stays in.
+- **Shares are of the headline only when the totals reconcile (within 3%).** Otherwise they are of the categories' own total, and the note under the chart says how far apart the two are and why. A share must never be part of a total it exceeds. The 3% allowance covers DefiLlama totalling each chain separately; chain shares already match the headline to within 0.3%.
+
 ## Design
 
 - **Visual language inspired by a16z crypto's State of Crypto 2025, without copying it.** No logos, names, wording or layouts are copied. Borrowed ideas: warm off-white paper, heavy black headlines, one accent per section, a highlighter block behind the key phrase, big numbered section openers with a blocky accent shape, callout boxes for standout numbers, colored table header rows, small source lines.

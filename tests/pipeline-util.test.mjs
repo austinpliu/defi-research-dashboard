@@ -5,7 +5,7 @@ import {
   sumLastDays, trimDays, firstSentences, mentions, stripHtml, DAY,
 } from '../scripts/lib/util.mjs';
 import { parseFeed } from '../scripts/lib/rss.mjs';
-import { prettyParentName, groupOverview, isChainKey, poolsForProtocol } from '../scripts/lib/defillama.mjs';
+import { prettyParentName, groupOverview, isChainKey, poolsForProtocol, categoryBreakdown } from '../scripts/lib/defillama.mjs';
 import { spacesFromSources, mainQuery, latestQuery } from '../scripts/lib/governance.mjs';
 import { carryForward } from '../scripts/lib/sources.mjs';
 import { classify } from '../scripts/lib/feeds.mjs';
@@ -195,4 +195,51 @@ test('sumLastDays can require a complete window (a gap must not shrink one side 
 
 test('stripHtml survives entities outside the Unicode range instead of throwing', () => {
   assert.equal(stripHtml('a &#99999999; b &#x110000; c'), 'a � b � c');
+});
+
+test('categoryBreakdown: shares use the headline TVL, without liquid staking or double counting (REVIEW #7)', () => {
+  // headline = 100: only Lending (60) and Dexs (40) count. Liquid staking, a vault curator that
+  // deposits into Lending, and a liquid restaking token (both flags) must not inflate the total.
+  const protocols = [
+    { name: 'Lend', category: 'Lending', tvl: 60, chainTvls: { Ethereum: 60 } },
+    { name: 'Swap', category: 'Dexs', tvl: 40, chainTvls: { Ethereum: 40 } },
+    { name: 'Lido-like', category: 'Liquid Staking', tvl: 90, chainTvls: { Ethereum: 90, liquidstaking: 90 } },
+    { name: 'Curator', category: 'Risk Curators', tvl: 30, chainTvls: { Ethereum: 30, doublecounted: 30 } },
+    { name: 'LRT', category: 'Liquid Restaking', tvl: 10, chainTvls: { Ethereum: 10, doublecounted: 10, liquidstaking: 10, dcAndLsOverlap: 10 } },
+    { name: 'Exchange', category: 'CEX', tvl: 500, chainTvls: { Ethereum: 500 } },
+    { name: 'Bridge', category: 'Bridge', tvl: 70, chainTvls: { Ethereum: 70 } },
+  ];
+  const r = categoryBreakdown(protocols, 100);
+  assert.equal(r.basis.method, 'defillama-keys');
+  assert.deepEqual(r.list.map((c) => [c.category, c.tvl, c.share]), [['Lending', 60, 60], ['Dexs', 40, 40]]);
+  const total = r.list.reduce((s, c) => s + c.share, 0);
+  assert.ok(total <= 100.5, `shares add up to ${total}% of the headline, never more`);
+  assert.equal(r.basis.attributed, 100);
+  assert.equal(r.basis.attributedShare, 100);
+  assert.equal(r.basis.liquidStaking, 90);
+  assert.equal(r.basis.doubleCounted, 30);
+  assert.equal(r.basis.both, 10);
+  assert.equal(r.basis.rawSum, 230, 'the old method summed 230 against a headline of 100');
+});
+
+test('categoryBreakdown: falls back to category rules when DefiLlama sends no per-protocol figures', () => {
+  const protocols = [
+    { category: 'Lending', tvl: 50 }, { category: 'Liquid Staking', tvl: 80 }, { category: 'Yield', tvl: 20 },
+    { category: 'Liquid Restaking', tvl: 5 }, { category: 'Dexs', tvl: 25 },
+  ];
+  const r = categoryBreakdown(protocols, 80);
+  assert.equal(r.basis.method, 'category-rules');
+  assert.deepEqual(r.list.map((c) => c.category), ['Lending', 'Dexs']);
+  assert.equal(r.list[0].share, 62.5);
+  assert.equal(r.basis.attributedShare, 93.75, 'a gap to the headline is reported, not hidden');
+  // with no headline, shares fall back to the categories' own total and say so
+  const r2 = categoryBreakdown(protocols, null);
+  assert.equal(r2.basis.denominator, 'attributed-no-headline');
+  assert.equal(r2.list.reduce((s, c) => s + c.share, 0), 100);
+  // if what's left still exceeds the headline (unflagged double counting), shares of the
+  // headline would total over 100%: use the categories' own total and say why
+  const r3 = categoryBreakdown(protocols, 50);
+  assert.equal(r3.basis.denominator, 'attributed-over-headline');
+  assert.equal(r3.basis.attributedShare, 150);
+  assert.equal(r3.list.reduce((s, c) => s + c.share, 0), 100);
 });

@@ -13,6 +13,22 @@ const TYPE_LABEL = {
   'governance-vote': 'Governance vote', 'governance-forum': 'Forum post', 'launch-upgrade': 'Launch / upgrade', news: 'News', blog: 'Blog', unlock: 'Unlock', scheduled: 'Scheduled',
 };
 
+/** How the category shares relate to the headline TVL, in plain words (generated from the data). */
+function categoryNote(b) {
+  if (!b) return 'Sum of each protocol’s TVL in the category.';
+  const left = [b.liquidStaking ? `liquid staking (${usd(b.liquidStaking)})` : null, b.doubleCounted ? `deposits another protocol also counts (${usd(b.doubleCounted)})` : null, b.both ? `${usd(b.both)} that is both` : null].filter(Boolean);
+  const leftText = left.length ? `Left out, as DefiLlama’s headline does: ${left.join(', ')}.` : '';
+  if (b.denominator === 'attributed-no-headline') return `Shares of the ${usd(b.attributed)} these categories add up to (the headline TVL was unavailable this run). ${leftText}`;
+  if (b.denominator === 'attributed-over-headline') return `Shares of the ${usd(b.attributed)} these categories add up to. That is ${pct(b.attributedShare - 100, { signed: false, digits: 0 })} more than the ${usd(b.headline)} headline DeFi TVL, because some deposits are still counted by two protocols and DefiLlama didn’t flag them this run. ${leftText}`;
+  const s = b.attributedShare;
+  const gap = s == null || Math.abs(s - 100) < 1
+    ? ` The categories add up to ${usd(b.attributed)}, matching it.`
+    : s > 100
+      ? ` The categories add up to ${usd(b.attributed)}, ${pct(s, { signed: false, digits: 0 })} of it: DefiLlama totals each chain separately, so the two differ slightly.`
+      : ` The categories add up to ${usd(b.attributed)}, ${pct(s, { signed: false, digits: 0 })} of it; the rest isn’t assigned to a category here.`;
+  return `Shares of the ${usd(b.headline)} headline DeFi TVL. Like the headline, this leaves out ${left.length ? left.join(', ') : 'nothing this run'}.${gap}${b.method === 'category-rules' ? ' (DefiLlama’s per-protocol flags were missing this run, so whole categories were left out by rule.)' : ''}`;
+}
+
 export async function render(root) {
   const files = await loadMany(['market.json', 'index.json', 'catalysts.json', 'meta.json']);
   const m = files['market.json'].data;
@@ -267,9 +283,9 @@ export async function render(root) {
     grid.append(h('div', { class: 'span-6' }, chartCard({
       kicker: 'Categories',
       termKey: 'category',
-      take: categoryTakeaway(m.categories.list),
-      title: 'Protocol TVL by category',
-      note: 'Sum of each protocol’s TVL in the category; some assets are counted by more than one protocol.',
+      take: categoryTakeaway(m.categories.list, m.categories.basis),
+      title: 'DeFi TVL by category',
+      note: categoryNote(m.categories.basis),
       build: hbarChart({ items: m.categories.list.slice(0, 10).map((c) => ({ name: c.category, value: c.tvl, sub: `${c.count} protocols · ${pct(c.share, { signed: false })}` })), name: 'TVL' }),
       src: S[m.categories.src],
       sources: S,
