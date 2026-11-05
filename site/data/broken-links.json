@@ -1,37 +1,9 @@
 {
- "checkedAt": "2026-11-05T19:23:29.108Z",
+ "checkedAt": "2026-11-05T19:47:00.519Z",
  "links": [
-  {
-   "url": "https://defillama.com/yields/pool/633c679d-8a54-592f-98ad-0c62505c1169",
-   "status": 500
-  },
-  {
-   "url": "https://defillama.com/yields/pool/643e883f-6922-4c89-82c3-bf3ac260fe1f",
-   "status": 500
-  },
-  {
-   "url": "https://defillama.com/yields/pool/70f5997c-1008-52dc-95c9-0087e2b07ebb",
-   "status": 500
-  },
-  {
-   "url": "https://defillama.com/yields/pool/7993b97d-12c3-4a36-b6b6-5b37bac4f8ae",
-   "status": 500
-  },
-  {
-   "url": "https://defillama.com/yields/pool/add076a8-bae8-563c-8fcf-a94ed4e802aa",
-   "status": 500
-  },
-  {
-   "url": "https://defillama.com/yields/pool/b828f0cb-853d-4b32-aebb-2e20d7fd70a8",
-   "status": 500
-  },
   {
    "url": "https://defillama.com/yields/pool/bd335b46-3daf-4507-adb2-6fd4337ea33b",
    "status": 404
-  },
-  {
-   "url": "https://defillama.com/yields/pool/c0b1d745-7fe9-4c27-a95d-b02aa9d26465",
-   "status": 500
   },
   {
    "url": "https://github.com/DefiLlama/emissions-adapters",
