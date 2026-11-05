@@ -3,7 +3,7 @@
 # When it runs:
 #   - every 6 hours (schedule below, times are UTC)
 #   - when you press "Run workflow" on the Actions tab
-#   - when you push a change to watchlist.json or the data scripts
+#   - when you push a change to watchlist.json, unlocks.json or the data scripts
 # On the main branch it then publishes the website to GitHub Pages.
 name: Update data
 
@@ -14,6 +14,7 @@ on:
   push:
     paths:
       - 'watchlist.json'
+      - 'unlocks.json'
       - 'scripts/**'
       - '.github/workflows/update-data.yml'
 

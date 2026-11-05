@@ -9,6 +9,7 @@ import { trimDays, rollingSum, RANGES, rangeLabel, changeOver } from '../series.
 import {
   trendTakeaway, protocolChainTakeaway, revenueTakeaway, priceTakeaway, valuationTakeaway, supplyTakeaway, yieldTakeaway,
 } from '../takeaways.js';
+import { unlocksBlock } from '../unlocks.js';
 
 export async function render(root, { params }) {
   const slug = params[0];
@@ -221,8 +222,8 @@ export async function render(root, { params }) {
     body: [
       valTable,
       segbar,
-      unl.list?.length
-        ? h('div', {}, h('p', { class: 'chart-title' }, term('Upcoming unlocks', 'unlock')), h('ul', { class: 'feed' }, unl.list.map((u) => h('li', {}, h('div', { class: 'when' }, date(u.ts)), h('div', { class: 'what' }, `${compact(u.tokens, 2)} ${sym || ''} ${u.category ? `(${u.category})` : ''}`)))))
+      unl.status
+        ? h('div', { style: { marginTop: '12px' } }, h('p', { class: 'chart-title' }, term('Upcoming unlocks', 'unlock')), unlocksBlock(unl, sym || name, { maxEvents: 4 }))
         : h('div', { style: { marginTop: '12px' } }, unavailable('Upcoming unlocks: unavailable', unl.unavailable || 'No unlock schedule in the data.')),
     ],
     src: [tokenSrc, S['dl-fees']].filter(Boolean),

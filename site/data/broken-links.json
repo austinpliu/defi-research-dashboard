@@ -1,4 +1,9 @@
 {
- "checkedAt": "2026-11-04T23:17:13.125Z",
- "links": []
+ "checkedAt": "2026-11-05T01:26:29.718Z",
+ "links": [
+  {
+   "url": "https://github.com/DefiLlama/emissions-adapters",
+   "status": 404
+  }
+ ]
 }

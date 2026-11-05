@@ -9,6 +9,7 @@ import { prettyParentName, groupOverview, isChainKey, poolsForProtocol } from '.
 import { spacesFromSources, mainQuery, latestQuery } from '../scripts/lib/governance.mjs';
 import { carryForward } from '../scripts/lib/sources.mjs';
 import { classify } from '../scripts/lib/feeds.mjs';
+import { buildTokenUnlocks } from '../scripts/lib/unlocks.mjs';
 
 const series = (vals, start = 1_700_000_000) => vals.map((v, i) => [Math.floor(start / DAY) * DAY + i * DAY, v]);
 
@@ -153,4 +154,31 @@ test('poolsForProtocol lists pools that pay yield before zero-yield collateral p
     { pool: 'd', project: 'x', tvlUsd: 50, apy: null },
   ] } };
   assert.deepEqual(poolsForProtocol(res, new Set(['x'])).map((p) => p.pool), ['b', 'a', 'd']);
+});
+
+test('buildTokenUnlocks: monthly tranches, linear vesting, releases, and nothing invented', () => {
+  const now = Date.parse('2026-11-05T12:00:00Z');
+  const src = [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }];
+  const u = buildTokenUnlocks({
+    status: 'scheduled', sources: src,
+    schedules: [
+      { label: 'Team', type: 'monthly', from: '2025-04', to: '2027-02', sharePerPeriod: 0.01, source: 'docs' },
+      { label: 'Investors', type: 'monthly', from: '2025-04', to: '2027-02', sharePerPeriod: null, source: 'docs' },
+      { label: 'Founders', type: 'linear', start: '2025-11-21', end: '2027-11-21', share: 0.152, source: 'docs' },
+      { label: 'Window only', type: 'linear', start: null, end: '2029-04', share: 0.1, source: 'docs' },
+    ],
+    events: [{ date: '2027-01-18', label: 'Release', share: null, source: 'docs' }, { date: '2026-01-18', label: 'Past', share: 0.1 }],
+  }, { supply: { max: 1e9 }, now });
+  const team = u.events.filter((e) => e.label === 'Team');
+  assert.equal(team.length, 3, 'Dec 2026, Jan and Feb 2027: this month is skipped (day unknown), nothing past the end');
+  assert.equal(new Date(team[0].ts * 1000).toISOString().slice(0, 7), '2026-12');
+  assert.equal(team[0].tokens, 1e7);
+  assert.ok(u.events.filter((e) => e.label === 'Investors').every((e) => e.tokens === null), 'no share, no amount');
+  const founders = u.schedules.find((s) => s.label === 'Founders');
+  assert.ok(Math.abs(founders.tokensPerMonth - 152e6 / 24) < 1e5);
+  assert.equal(u.schedules.find((s) => s.label === 'Window only').tokensPerMonth, null, 'no start date, no monthly rate');
+  assert.ok(u.events.some((e) => e.label === 'Founders: vesting ends' && e.precision === 'day'));
+  assert.ok(u.events.some((e) => e.label === 'Release' && e.tokens === null));
+  assert.ok(!u.events.some((e) => e.label === 'Past'));
+  assert.equal(buildTokenUnlocks(null).status, 'unconfirmed');
 });

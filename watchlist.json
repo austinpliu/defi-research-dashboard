@@ -61,7 +61,13 @@
       "links": {
         "docs": "https://docs.ondo.finance"
       },
-      "feeds": []
+      "feeds": [
+        {
+          "name": "Ondo DAO forum (Flux Finance)",
+          "url": "https://forum.fluxfinance.com/latest.rss",
+          "type": "governance-forum"
+        }
+      ]
     },
     {
       "name": "Centrifuge",

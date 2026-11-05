@@ -1,0 +1,14 @@
+{
+  "about": "SYNTHETIC test data for tests/pipeline.test.mjs only.",
+  "lastChecked": "2026-11-01",
+  "tokens": {
+    "alpha-token": {
+      "symbol": "ALP",
+      "status": "scheduled",
+      "summary": "Synthetic monthly schedule for tests.",
+      "sources": [{ "id": "docs", "label": "Alpha docs (synthetic)", "url": "https://example.com/alpha-tokenomics" }],
+      "schedules": [{ "label": "Team", "type": "monthly", "from": "2020-01", "to": "2099-12", "sharePerPeriod": 0.01, "source": "docs", "basis": "test" }]
+    },
+    "bad-entry": { "status": "maybe", "sources": [] }
+  }
+}

@@ -99,6 +99,17 @@ globalThis.fetch = async (url, opts = {}) => {
   if (u.includes('api.llama.fi/protocol/')) return json(protocolDetail(decodeURIComponent(u.split('/protocol/')[1])));
   if (u.includes('/summary/fees/') && u.includes('dailyHoldersRevenue')) return json({ message: 'no data' }, 404);
   if (u.includes('/summary/fees/')) return json({ total24h: 1e5, total7d: 7e5, total30d: 3e6, total1y: 3.6e7, totalAllTime: 9e7, change_1d: 3, totalDataChart: days(500, (ts, i) => [ts, 1e5 + i]) });
+  if (u.includes('coingecko.com/api/v3/coins/markets')) {
+    const c = (id, rank, extra = {}) => ({ id, symbol: id.slice(0, 3), name: `${id} coin`, market_cap_rank: rank, current_price: 10 * rank, market_cap: 1e10 / rank, fully_diluted_valuation: 2e10 / rank, total_volume: 1e8, price_change_percentage_24h_in_currency: 1, price_change_percentage_7d_in_currency: -2, price_change_percentage_30d_in_currency: 5, circulating_supply: 1e6, max_supply: null, ath_change_percentage: -40, ...extra });
+    return json(u.includes('category=') ? [c('alpha-token', 50), c('defi-only', 400)] : [c('big-coin', 1), c('alpha-token', 50)]);
+  }
+  if (u.includes('gamma-api.polymarket.com/events')) return json([
+    { id: '1', slug: 'btc-above-x', title: 'Bitcoin above X on Friday?', closed: false, endDate: '2030-01-01T00:00:00Z', volume24hr: 5e5, volume: 9e6, liquidity: 2e5, tags: [{ slug: 'crypto', label: 'Crypto' }],
+      markets: [{ question: 'Bitcoin above X on Friday?', outcomes: '["Yes","No"]', outcomePrices: '["0.62","0.38"]', active: true, closed: false }] },
+    { id: '2', slug: 'eth-price', title: 'ETH price at year end', closed: false, volume24hr: 9e5, volume: 4e6, liquidity: 1e5, tags: [{ slug: 'crypto' }],
+      markets: [{ groupItemTitle: '<$2k', outcomes: '["Yes","No"]', outcomePrices: '["0.1","0.9"]' }, { groupItemTitle: '$2k–$4k', outcomes: '["Yes","No"]', outcomePrices: '["0.7","0.3"]' }, { groupItemTitle: 'closed one', closed: true, outcomes: '["Yes","No"]', outcomePrices: '["1","0"]' }] },
+    { id: '3', slug: 'sports', title: 'Not crypto', closed: false, volume24hr: 9e9, tags: [{ slug: 'sports' }], markets: [{ outcomes: '["Yes","No"]', outcomePrices: '["0.5","0.5"]' }] },
+  ]);
   if (u.includes('coingecko.com/api/v3/coins/missing-coin')) return json({ error: 'coin not found' }, 404);
   if (u.includes('coingecko.com/api/v3/search')) return json({ coins: [{ id: 'right-id', name: 'Right', symbol: 'RGT', market_cap_rank: 100 }] });
   if (u.includes('/market_chart')) return json({ prices: days(365, (ts, i) => [ts * 1000, 80 + i / 10]), market_caps: days(365, (ts, i) => [ts * 1000, 1e9 + i * 1e6]), total_volumes: days(365, (ts) => [ts * 1000, 1e8]) });

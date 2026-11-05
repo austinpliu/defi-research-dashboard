@@ -7,6 +7,7 @@ import { dataTable } from '../table.js';
 import { usd, pct, ratio, date, dateTime, compact } from '../format.js';
 import { trimDays, rangeLabel } from '../series.js';
 import { priceTakeaway, supplyTakeaway, liquidityTakeaway, trendTakeaway } from '../takeaways.js';
+import { unlocksBlock, unlockTakeaway } from '../unlocks.js';
 
 export async function render(root, { params }) {
   const id = params[0];
@@ -123,11 +124,18 @@ export async function render(root, { params }) {
             segs.map((s) => h('tr', {}, h('td', {}, h('span', { class: 'type-dot', style: { background: s.color, marginRight: '6px', border: '1px solid var(--border-strong)' } }), term(s.label, s.key)), h('td', { class: 'n' }, compact(s.v, 2)), h('td', { class: 'n' }, pct((s.v / cap) * 100, { signed: false })))),
             h('tr', {}, h('td', {}, term('Total supply', 'totalSupply')), h('td', { class: 'n' }, compact(sup.total, 2)), h('td', {}, '')),
             h('tr', {}, h('td', {}, term('Max supply', 'maxSupply')), h('td', { class: 'n' }, sup.max ? compact(sup.max, 2) : sup.maxInfinite ? 'no cap' : '—'), h('td', {}, ''))))),
-        h('div', { style: { marginTop: '12px' } }, unavailable('Unlock schedule: unavailable', 'No free, keyless source publishes unlock dates (DefiLlama’s unlock data is Pro-only). The supply split above shows how much could still enter circulation.')),
       ]
       : unavailable('Supply unavailable', t.unavailable || 'CoinGecko returned no supply figures.'),
     src: msrc,
     sources: S,
+  })));
+
+  // unlocks (hand-checked from each project's docs; see unlocks.json)
+  grid.append(h('div', { class: 'span-12' }, infoCard({
+    kicker: 'Unlocks',
+    take: unlockTakeaway(sym, t.unlocks),
+    fallback: `${sym} unlocks`,
+    body: unlocksBlock(t.unlocks, sym, { maxEvents: 8 }),
   })));
 
   // contracts

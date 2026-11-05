@@ -18,6 +18,8 @@ import { fetchCoinRaw, buildToken, applyLlamaFallback, searchCoin } from './lib/
 import { fetchNetworkMap, fetchTokenPools } from './lib/dex.mjs';
 import { spacesFromSources, fetchProposals } from './lib/governance.mjs';
 import { fetchFeed, feedItems } from './lib/feeds.mjs';
+import { fetchCoinMarkets, buildCoinRows, fetchPredictionEvents, buildPredictionEvents, predictionProtocols } from './lib/markets.mjs';
+import { probeEmissionsRepo, EMISSIONS_REPO, loadManualUnlocks, buildTokenUnlocks } from './lib/unlocks.mjs';
 import { sourceRecord, derivedRecord, carryForward } from './lib/sources.mjs';
 import { roundSmart, num, slugify, normSeries, dailySeries, trimDays, compactSeries } from './lib/util.mjs';
 
@@ -408,11 +410,21 @@ async function main() {
   const seen = new Set();
   feedItemsAll = feedItemsAll.filter((i) => (seen.has(i.url) ? false : (seen.add(i.url), true)));
 
-  // 7. Unlocks (only if DefiLlama's emissions endpoint answers on the free host) ---
+  // 7. Unlocks ------------------------------------------------------------------
+  // Route 1: DefiLlama's open-source emissions adapters, if the repo is publicly cloneable.
+  const unlockNames = protocols.flatMap((p) => [p.entry.defillama, p.token?.id, p.entry.symbol, String(p.entry.name).split(' ')[0]]).filter(Boolean);
+  const ea = await probeEmissionsRepo({ names: unlockNames, printFiles: PROBE });
+  console.log(ea.ok ? `   ✓ emissions-adapters is public (${ea.sha}); ${ea.protocolCount} protocol files; matching: ${ea.files.join(', ') || 'none'}` : `   ✗ emissions-adapters: ${ea.error}`);
+  catSources['emissions-adapters'] = {
+    name: 'DefiLlama emissions-adapters', label: 'Open-source unlock schedules (GitHub)', page: EMISSIONS_REPO, api: null,
+    fetchedAt: ea.fetchedAt, ok: ea.ok, status: null, error: ea.ok ? null : `Repository not publicly cloneable: ${ea.error}`,
+  };
+  // DefiLlama's own emissions API (paid-only on the free host; asked once per run in case that changes)
   const unlockNote = raw.emissions.ok
     ? null
     : `Unlock schedules unavailable: DefiLlama serves them only on its paid Pro API, and no free keyless source was found (${raw.emissions.error}).`;
   const unlockItems = [];
+  const unlockNoteParts = [];
   if (raw.emissions.ok && Array.isArray(raw.emissions.data)) {
     for (const p of protocols) {
       const gid = p.token?.id;
@@ -452,6 +464,75 @@ async function main() {
       p.doc.unlocks = { unavailable: unlockNote, src: 'dl-emissions' };
       p.doc.sources['dl-emissions'] = sourceRecord({ name: 'DefiLlama', label: 'Token unlocks', page: `${DL.site}/unlocks`, res: raw.emissions, note: 'Pro-only endpoint' });
     }
+  }
+
+  // Route 3: hand-checked unlocks.json, built from each project's own docs. Used whenever
+  // DefiLlama's (paid) unlock data isn't available, which is every run on the free host.
+  if (!raw.emissions.ok) {
+    const manual = loadManualUnlocks(process.env.UNLOCKS_FILE || join(ROOT, 'unlocks.json'));
+    for (const msg of manual.problems) problem('warn', msg, 'Fix that entry in unlocks.json (see README › Token unlocks)');
+    if (manual.lastChecked && Date.now() - Date.parse(manual.lastChecked) > 90 * 86400e3) {
+      problem('info', `unlocks.json was last checked on ${manual.lastChecked}; re-check the linked docs pages and update it`);
+    }
+    const unconfirmed = [];
+    for (const p of protocols) {
+      if (!p.token) continue;
+      const u = buildTokenUnlocks(manual.tokens[p.token.id], { supply: p.token.supply });
+      const sym = p.entry.symbol || p.token.symbol || p.entry.name;
+      const srcKey = `manual-unlocks-${p.token.id}`;
+      const first = u.sources[0];
+      const srcRec = first
+        ? { name: first.label, label: 'Unlock schedule, hand-checked from the project’s docs', page: first.url, api: null, fetchedAt: u.lastChecked ? `${u.lastChecked}T00:00:00.000Z` : null, ok: true, status: null, error: null, manual: true, note: `Manually sourced; last checked ${u.lastChecked}` }
+        : null;
+      p.token.unlocks = { ...u, src: srcRec ? srcKey : null };
+      p.doc.unlocks = { ...u, src: srcRec ? srcKey : null };
+      if (srcRec) { p.token.sources[srcKey] = srcRec; p.doc.sources[srcKey] = srcRec; catSources[srcKey] = srcRec; }
+      if (u.status === 'unconfirmed') unconfirmed.push(sym);
+      // Catalysts: dated events. Tranches that fall in the same month (or on the same day) for
+      // one token become one item, and monthly schedules show their next 6 months.
+      const groups = new Map();
+      for (const e of u.events) {
+        const key = `${e.ts}|${e.precision}|${e.kind === 'vesting-end' ? 'end' : 'unlock'}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(e);
+      }
+      const monthsShown = new Set();
+      for (const [key, evs] of groups) {
+        const e0 = evs[0];
+        if (evs.every((e) => e.kind === 'monthly')) {
+          if (!monthsShown.has(e0.ts) && monthsShown.size >= 6) continue;
+          monthsShown.add(e0.ts);
+        }
+        const amountOf = (e) => (e.tokens != null ? `${Math.round(e.tokens).toLocaleString('en-US')} ${sym}${e.share != null ? ` (${(e.share * 100).toFixed(2)}% of supply)` : ''}` : 'amount not published');
+        const known = evs.filter((e) => e.tokens != null);
+        const total = known.reduce((sum, e) => sum + e.tokens, 0);
+        const title = key.endsWith('|end')
+          ? `${sym}: ${evs.map((e) => e.label).join('; ')}`
+          : `${sym} unlock: ${evs.map((e) => `${amountOf(e)} · ${e.label}`).join(' + ')}`;
+        unlockItems.push({
+          id: `unlock-${p.token.id}-${key.replace(/\|/g, '-')}`,
+          date: new Date(e0.ts * 1000).toISOString(),
+          datePrecision: e0.precision,
+          type: 'unlock',
+          status: 'upcoming',
+          protocols: [p.doc.slug],
+          symbols: [sym],
+          title,
+          summary: evs.map((e) => e.basis).filter(Boolean).join(' '),
+          url: e0.source?.url || first?.url,
+          sourceName: `${e0.source?.label || first?.label} (hand-checked ${u.lastChecked})`,
+          src: srcKey,
+          tokens: known.length ? total : null,
+          share: known.length && known.every((e) => e.share != null) ? known.reduce((sum, e) => sum + e.share, 0) : null,
+          partialAmount: known.length > 0 && known.length < evs.length,
+          manual: true,
+        });
+      }
+    }
+    unlockItems.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    unlockNoteParts.push(unconfirmed.length
+      ? `Unconfirmed for ${unconfirmed.join(', ')}: their projects publish no unlock schedule we could confirm, so none is shown (each token page says what the docs do say).`
+      : null);
   }
 
   // 8. Derived ratios + per-protocol news ------------------------------------
@@ -571,10 +652,49 @@ async function main() {
     generatedAt: new Date().toISOString(),
     items: catalystItems,
     headlines,
-    unavailable: unlockNote ? [{ type: 'unlock', reason: unlockNote }] : [],
+    unavailable: unlockNoteParts.filter(Boolean).map((reason) => ({ type: 'unlock', title: 'Token unlocks: unconfirmed for some tokens', reason })),
     protocols: watchMeta.map(({ slug, name, symbol, group }) => ({ slug, name, symbol, group })),
     sources: catSources,
     disclaimer: 'Information, not predictions. Each item links to its original source; dates and labels come from that source or from simple keyword rules described on the page.',
+  };
+
+  // 9b. Coins beyond the watchlist, and prediction markets -------------------
+  console.log('\n== Coins and prediction markets');
+  const coinRes = await fetchCoinMarkets(http);
+  probe('coin markets', coinRes.all);
+  probe('coin markets (DeFi)', coinRes.defi);
+  const freshCoins = buildCoinRows(coinRes.all, coinRes.defi, new Set(tokens.map((t) => t.id)));
+  const coinsSrc = freshCoins ? coinRes.sources['cg-markets'] : { ...coinRes.sources['cg-markets'], ok: false, error: coinRes.sources['cg-markets'].error || 'Unexpected response shape' };
+  const prevCoins = readJSON(join(OUT, 'coins.json'));
+  const coinCarry = carryForward({ freshData: freshCoins, freshSource: coinsSrc, prevData: prevCoins?.rows ?? null, prevSource: prevCoins?.sources?.['cg-markets'] });
+  if (!coinsSrc.ok) problem('warn', `CoinGecko coin list failed (${coinsSrc.error})`);
+  else if (!coinRes.defi.ok) problem('warn', `CoinGecko DeFi category list failed (${coinRes.defi.error}), so coins aren't tagged DeFi this run`);
+  const coinsDoc = {
+    generatedAt: new Date().toISOString(),
+    rows: coinCarry.data,
+    sources: { ...coinRes.sources, 'cg-markets': coinCarry.source },
+    ...(coinCarry.data ? {} : { unavailable: coinsSrc.error }),
+  };
+
+  const pm = await fetchPredictionEvents(http);
+  probe('polymarket events', pm.res);
+  if (PROBE && pm.res.ok) console.log('   ↳ polymarket event sample:', JSON.stringify((Array.isArray(pm.res.data) ? pm.res.data : pm.res.data?.data || [])[0]).slice(0, 1500));
+  const freshEvents = buildPredictionEvents(pm.res);
+  const pmSrc = freshEvents ? pm.source : { ...pm.source, ok: false, error: pm.source.error || 'Unexpected response shape' };
+  const prevPred = readJSON(join(OUT, 'predictions.json'));
+  const evCarry = carryForward({ freshData: freshEvents, freshSource: pmSrc, prevData: prevPred?.events ?? null, prevSource: prevPred?.sources?.['pm-events'] });
+  if (!pmSrc.ok) problem('warn', `Polymarket prediction markets failed (${pmSrc.error})`);
+  const predictions = {
+    generatedAt: new Date().toISOString(),
+    events: evCarry.data,
+    protocols: predictionProtocols(raw.protocols, fees30dById),
+    sources: {
+      'pm-events': evCarry.source,
+      'dl-protocols': sourceRecord({ name: 'DefiLlama', label: 'Protocols in the Prediction Market category (TVL, 7-day change)', page: `${DL.site}/`, res: raw.protocols }),
+      'dl-fees': sourceRecord({ name: 'DefiLlama', label: 'Fees (30d) per protocol', page: `${DL.site}/fees`, res: raw.fees }),
+    },
+    ...(evCarry.data ? {} : { unavailable: pmSrc.error }),
+    note: 'Prediction-market prices are what traders pay for each outcome, read as probabilities. They are bets, not forecasts by this site.',
   };
 
   // 10. Index (nav, search, watchlist strip) ----------------------------------
@@ -627,6 +747,8 @@ async function main() {
   writeJSON(join(OUT, 'market.json'), market);
   if (screener) writeJSON(join(OUT, 'screener.json'), { generatedAt: new Date().toISOString(), ...screener });
   writeJSON(join(OUT, 'catalysts.json'), catalysts);
+  writeJSON(join(OUT, 'coins.json'), coinsDoc);
+  writeJSON(join(OUT, 'predictions.json'), predictions);
   writeJSON(join(OUT, 'index.json'), index);
 
   const failed = http.requests.filter((r) => !r.ok);
@@ -639,7 +761,7 @@ async function main() {
       generatedAt: new Date().toISOString(),
       durationSec: Math.round((Date.now() - started) / 1000),
       run,
-      counts: { requests: http.requests.length, failed: failed.length, protocols: protocols.length, tokens: tokens.length, catalysts: catalystItems.length },
+      counts: { requests: http.requests.length, failed: failed.length, protocols: protocols.length, tokens: tokens.length, catalysts: catalystItems.length, coins: coinsDoc.rows?.length ?? 0, predictionMarkets: predictions.events?.length ?? 0 },
       problems,
       requests: http.requests,
     },

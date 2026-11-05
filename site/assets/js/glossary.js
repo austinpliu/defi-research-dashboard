@@ -52,6 +52,10 @@ export const GLOSSARY = {
   stale: { term: 'Stale data', def: 'The latest fetch failed, so the dashboard is showing the previous successful fetch (never older than 48 hours) and says when it was taken.' },
   calculated: { term: 'Calculated', def: 'A figure this dashboard computed from fetched numbers (the formula is shown); it is not published by the source itself.' },
   fetchedAt: { term: 'Fetched at', def: 'When the dashboard’s data script downloaded this number from the source.' },
+  predictionMarket: { term: 'Prediction market', def: 'A market where people buy shares that pay $1 if an event happens (and nothing if it doesn’t), so share prices show what traders think the odds are.' },
+  impliedProb: { term: 'Implied probability', def: 'The price of a share that pays $1 if an outcome happens, read as the market’s odds: a $0.62 share means traders put about 62% on it. It reflects bets, not a forecast by this site.' },
+  pmVolume: { term: 'Prediction-market volume', def: 'The dollar value of shares traded in that market over the period shown.' },
+  pmLiquidity: { term: 'Prediction-market liquidity', def: 'The money waiting in the market’s order book; more liquidity means bigger bets move the price less.' },
 };
 
 export function termDef(key) {
